@@ -348,7 +348,7 @@ export default function InvoicesPage() {
                 <span className="text-sm text-white/70">Description</span>
                 <textarea
                   className="min-h-28 w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
-                  placeholder="Consultancy services for FedEx project"
+                  placeholder="Consultancy services for monthly project support"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
