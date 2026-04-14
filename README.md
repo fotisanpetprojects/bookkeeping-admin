@@ -140,3 +140,5 @@ This project demonstrates:
 ## Status
 
 Bookkeeping Admin is an active portfolio and learning project. The current version is usable as a local-first bookkeeping tool and will continue to evolve through iterative improvements.
+
+Small improvements and documentation updates are committed as the product evolves.
