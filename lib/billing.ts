@@ -10,6 +10,7 @@ export type BusinessProfile = {
   iban: string;
   bankName: string;
   paymentTermsDays: string;
+  letterheadDataUrl: string;
 };
 
 export type SavedBusinessProfile = BusinessProfile & {
@@ -76,6 +77,7 @@ export const EMPTY_BUSINESS_PROFILE: BusinessProfile = {
   iban: '',
   bankName: '',
   paymentTermsDays: '30',
+  letterheadDataUrl: '',
 };
 
 export function createEmptyClientProfile(): ClientProfile {
@@ -101,6 +103,7 @@ export function toBusinessProfile(profile: SavedBusinessProfile): BusinessProfil
     iban: profile.iban,
     bankName: profile.bankName,
     paymentTermsDays: profile.paymentTermsDays,
+    letterheadDataUrl: profile.letterheadDataUrl || '',
   };
 }
 

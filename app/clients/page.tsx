@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { ChangeEvent, useState } from 'react';
 import { useLocalStorageState } from '@/lib/local-storage';
 import {
   BusinessProfile,
@@ -51,19 +52,34 @@ function SavedBusinessProfilesPanel({
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onEdit(profile)}
-                    className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => onRemove(profile.id)}
-                    className="rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-red-200 hover:bg-red-400/20"
-                  >
-                    Remove
-                  </button>
+                <div className="flex flex-col items-start gap-3">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onEdit(profile)}
+                      className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onRemove(profile.id)}
+                      className="rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-red-200 hover:bg-red-400/20"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  {profile.letterheadDataUrl && (
+                    <div className="overflow-hidden rounded-2xl bg-white p-2">
+                      <Image
+                        src={profile.letterheadDataUrl}
+                        alt={`${profile.businessName} logo`}
+                        width={88}
+                        height={88}
+                        className="h-[88px] w-[88px] object-contain"
+                        unoptimized
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -171,6 +187,8 @@ export default function ClientsPage() {
   const [clientForm, setClientForm] = useState<ClientProfile>(createEmptyClientProfile());
   const [editingClientId, setEditingClientId] = useState<number | null>(null);
   const [businessNotice, setBusinessNotice] = useState('');
+  const [businessError, setBusinessError] = useState('');
+  const [businessLogoInputKey, setBusinessLogoInputKey] = useState(0);
   const [error, setError] = useState('');
 
   const updateBusinessField = (field: keyof BusinessProfile, value: string) => {
@@ -179,12 +197,60 @@ export default function ClientsPage() {
       [field]: value,
     });
     setBusinessNotice('');
+    setBusinessError('');
+  };
+
+  const handleBusinessLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      const message = 'Please upload a PNG, JPG, or JPEG logo file.';
+      setBusinessError(message);
+      window.alert(message);
+      setBusinessLogoInputKey((current) => current + 1);
+      return;
+    }
+
+    if (file.size > 300 * 1024) {
+      const message = 'Logo files must be 300 KB or smaller.';
+      setBusinessError(message);
+      window.alert(message);
+      setBusinessLogoInputKey((current) => current + 1);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+
+      if (typeof result !== 'string') {
+        const message = 'Could not read that logo file. Please try again.';
+        setBusinessError(message);
+        window.alert(message);
+        return;
+      }
+
+      setBusinessDraft((current) => ({
+        ...current,
+        letterheadDataUrl: result,
+      }));
+      setBusinessNotice('');
+      setBusinessError('');
+      setBusinessLogoInputKey((current) => current + 1);
+    };
+    reader.readAsDataURL(file);
   };
 
   const emptyBusinessFields = () => {
     setBusinessDraft({ ...EMPTY_BUSINESS_PROFILE });
     setEditingBusinessId(null);
     setBusinessNotice('');
+    setBusinessError('');
+    setBusinessLogoInputKey((current) => current + 1);
   };
 
   const saveBusinessProfile = () => {
@@ -208,12 +274,16 @@ export default function ClientsPage() {
     setBusinessDraft({ ...EMPTY_BUSINESS_PROFILE });
     setEditingBusinessId(null);
     setBusinessNotice(editingBusinessId ? 'Business profile updated.' : 'Business profile saved.');
+    setBusinessError('');
+    setBusinessLogoInputKey((current) => current + 1);
   };
 
   const editBusinessProfile = (profile: SavedBusinessProfile) => {
     setBusinessDraft(toBusinessProfile(profile));
     setEditingBusinessId(profile.id);
     setBusinessNotice('');
+    setBusinessError('');
+    setBusinessLogoInputKey((current) => current + 1);
   };
 
   const removeBusinessProfile = (id: number) => {
@@ -230,6 +300,7 @@ export default function ClientsPage() {
         : { ...EMPTY_BUSINESS_PROFILE }
     );
     setBusinessNotice('');
+    setBusinessError('');
   };
 
   const updateClientField = (field: keyof ClientProfile, value: string | number) => {
@@ -433,14 +504,48 @@ export default function ClientsPage() {
                 onChange={(e) => updateBusinessField('paymentTermsDays', e.target.value)}
               />
             </label>
+
+            <label className="space-y-2">
+              <span className="text-sm text-white/70">Logo / letterhead</span>
+              <input
+                key={businessLogoInputKey}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-medium file:text-black"
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={handleBusinessLogoUpload}
+              />
+              <p className="text-xs text-white/45">
+                PNG, JPG, or JPEG. Maximum size: 300 KB.
+              </p>
+            </label>
           </div>
 
-          <div className="mt-5 flex items-center justify-between text-sm text-white/55">
+          <div className="mt-5 flex flex-wrap items-start justify-between gap-4 text-sm text-white/55">
             <div>
               {editingBusinessId ? 'Editing a saved business profile.' : 'Creating a new business profile.'}
             </div>
-            {businessNotice && <div className="text-emerald-200">{businessNotice}</div>}
+            <div className="flex flex-col items-end gap-2">
+              {businessDraft.letterheadDataUrl && (
+                <div className="overflow-hidden rounded-2xl bg-white p-2">
+                  <Image
+                    src={businessDraft.letterheadDataUrl}
+                    alt="Business logo preview"
+                    width={80}
+                    height={80}
+                    className="h-20 w-20 object-contain"
+                    unoptimized
+                  />
+                </div>
+              )}
+              {businessNotice && <div className="text-emerald-200">{businessNotice}</div>}
+            </div>
           </div>
+
+          {businessError && (
+            <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">
+              {businessError}
+            </div>
+          )}
         </div>
 
         <SavedBusinessProfilesPanel

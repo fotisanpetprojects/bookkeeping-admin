@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { jsPDF } from 'jspdf';
 import { useLocalStorageState } from '@/lib/local-storage';
 import {
   BusinessProfile,
@@ -20,6 +22,252 @@ import {
   isInvoiceRecord,
   toBusinessProfile,
 } from '@/lib/billing';
+
+type InvoicePreviewData = Omit<InvoiceRecord, 'id' | 'clientProfile'> & {
+  clientProfile: ClientProfile | null;
+};
+
+function matchesBusinessProfile(
+  savedProfile: SavedBusinessProfile,
+  profileToMatch: BusinessProfile
+) {
+  return (
+    savedProfile.businessName === profileToMatch.businessName &&
+    savedProfile.contactName === profileToMatch.contactName &&
+    savedProfile.streetAddress === profileToMatch.streetAddress &&
+    savedProfile.postalCodeCity === profileToMatch.postalCodeCity &&
+    savedProfile.kvkNumber === profileToMatch.kvkNumber &&
+    savedProfile.vatNumber === profileToMatch.vatNumber &&
+    savedProfile.iban === profileToMatch.iban &&
+    savedProfile.bankName === profileToMatch.bankName &&
+    savedProfile.paymentTermsDays === profileToMatch.paymentTermsDays
+  );
+}
+
+function getImageFormatFromDataUrl(dataUrl: string) {
+  if (dataUrl.startsWith('data:image/png')) {
+    return 'PNG';
+  }
+
+  return 'JPEG';
+}
+
+function resolveInvoiceForDisplay(
+  invoice: InvoiceRecord,
+  businessProfiles: SavedBusinessProfile[]
+) {
+  const matchingBusinessProfile = businessProfiles.find((profile) => {
+    return matchesBusinessProfile(profile, invoice.fromProfile);
+  });
+
+  if (!matchingBusinessProfile) {
+    return invoice;
+  }
+
+  return {
+    ...invoice,
+    fromProfile: {
+      ...invoice.fromProfile,
+      letterheadDataUrl:
+        matchingBusinessProfile.letterheadDataUrl || invoice.fromProfile.letterheadDataUrl || '',
+    },
+  };
+}
+
+function downloadInvoicePdf(invoice: InvoiceRecord) {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 16;
+  const contentWidth = pageWidth - margin * 2;
+  const labelColor = [71, 85, 105] as const;
+  const textColor = [30, 41, 59] as const;
+  const leftColumnWidth = (contentWidth - 14) / 2;
+  const rightColumnX = margin + leftColumnWidth + 14;
+  const logoSize = 28;
+  let y = 18;
+
+  const drawLabel = (text: string, x: number, labelY: number) => {
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    pdf.setTextColor(...labelColor);
+    pdf.text(text, x, labelY);
+  };
+
+  const drawValueLines = (
+    lines: string[],
+    x: number,
+    startY: number,
+    width: number,
+    boldFirstLine = false
+  ) => {
+    let currentY = startY;
+
+    lines.forEach((line, index) => {
+      const splitLines = pdf.splitTextToSize(line || ' ', width);
+      pdf.setFont('helvetica', boldFirstLine && index === 0 ? 'bold' : 'normal');
+      pdf.setFontSize(boldFirstLine && index === 0 ? 15 : 11.5);
+      pdf.setTextColor(...textColor);
+      pdf.text(splitLines, x, currentY);
+      currentY += splitLines.length * (boldFirstLine && index === 0 ? 6 : 5.3);
+    });
+
+    return currentY;
+  };
+
+  if (invoice.fromProfile.letterheadDataUrl) {
+    try {
+      pdf.addImage(
+        invoice.fromProfile.letterheadDataUrl,
+        getImageFormatFromDataUrl(invoice.fromProfile.letterheadDataUrl),
+        margin,
+        y,
+        logoSize,
+        logoSize,
+      );
+    } catch {
+      // Ignore image rendering failures and continue with the rest of the invoice.
+    }
+  }
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(25);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text('INVOICE', pageWidth - margin, y + 12, { align: 'right' });
+  y += logoSize + 10;
+
+  drawLabel('From', margin, y);
+  drawLabel('To', rightColumnX, y);
+  y += 5;
+
+  const fromBottomY = drawValueLines(
+    [
+      invoice.fromProfile.businessName || 'Your business name',
+      invoice.fromProfile.contactName || 'Contact name',
+      invoice.fromProfile.streetAddress || 'Street and number',
+      invoice.fromProfile.postalCodeCity || 'Postal code and city',
+      `KvK: ${invoice.fromProfile.kvkNumber || '—'}`,
+      `BTW: ${invoice.fromProfile.vatNumber || '—'}`,
+      `IBAN: ${invoice.fromProfile.iban || '—'}`,
+    ],
+    margin,
+    y,
+    leftColumnWidth,
+    true
+  );
+
+  const toBottomY = drawValueLines(
+    [
+      invoice.clientProfile.companyName,
+      ...(invoice.clientProfile.attentionName ? [invoice.clientProfile.attentionName] : []),
+      invoice.clientProfile.streetAddress,
+      invoice.clientProfile.postalCodeCity,
+      `KvK: ${invoice.clientProfile.kvkNumber || '—'}`,
+      `BTW: ${invoice.clientProfile.vatNumber || '—'}`,
+    ],
+    rightColumnX,
+    y,
+    leftColumnWidth,
+    true
+  );
+
+  y = Math.max(fromBottomY, toBottomY) + 8;
+
+  const metaLeftBottomY = drawValueLines(
+    [
+      `Invoice Date: ${formatDate(invoice.invoiceDate)}`,
+      `Invoice Number: ${invoice.invoiceNumber || '—'}`,
+      `Period: ${invoice.periodLabel || '—'}`,
+    ],
+    margin,
+    y,
+    leftColumnWidth
+  );
+
+  const metaRightBottomY = drawValueLines(
+    [
+      `Payment Terms: ${invoice.paymentTermsDays} days`,
+      `Due Date: ${formatDate(invoice.dueDate)}`,
+      `Bank: ${invoice.fromProfile.bankName || '—'} – ${invoice.fromProfile.iban || '—'}`,
+    ],
+    rightColumnX,
+    y,
+    leftColumnWidth
+  );
+
+  y = Math.max(metaLeftBottomY, metaRightBottomY) + 10;
+
+  const descWidth = 88;
+  const hoursWidth = 18;
+  const rateWidth = 28;
+  const descX = margin;
+  const hoursX = descX + descWidth + 4;
+  const rateX = hoursX + hoursWidth + 4;
+  const amountX = rateX + rateWidth + 4;
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(...labelColor);
+  pdf.text('Description', descX, y);
+  pdf.text('Hours', hoursX, y);
+  pdf.text('Rate (EUR)', rateX, y);
+  pdf.text('Amount (EUR)', amountX, y);
+  y += 6;
+
+  const descriptionLines = pdf.splitTextToSize(
+    invoice.description || 'Consultancy services for project work',
+    descWidth
+  );
+  const cappedDescriptionLines = descriptionLines.slice(0, 5);
+
+  if (descriptionLines.length > 5) {
+    cappedDescriptionLines[4] = `${cappedDescriptionLines[4]}...`;
+  }
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(11.5);
+  pdf.setTextColor(...textColor);
+  pdf.text(cappedDescriptionLines, descX, y);
+  pdf.text(String(invoice.hours || 0), hoursX, y);
+  pdf.text(formatCurrency(invoice.rate), rateX, y);
+  pdf.text(formatCurrency(invoice.subtotal), amountX, y);
+
+  y += Math.max(cappedDescriptionLines.length * 5.3, 8) + 12;
+
+  const totalsX = pageWidth - margin - 76;
+  const totalsValueX = pageWidth - margin;
+  const drawTotalRow = (label: string, value: string, isFinal = false) => {
+    pdf.setFont('helvetica', isFinal ? 'bold' : 'normal');
+    pdf.setFontSize(isFinal ? 12.5 : 11.5);
+    pdf.setTextColor(...textColor);
+    pdf.text(label, totalsX, y);
+    pdf.text(value, totalsValueX, y, { align: 'right' });
+    y += isFinal ? 7 : 6;
+  };
+
+  drawTotalRow('Subtotal (excl. BTW)', formatCurrency(invoice.subtotal));
+  drawTotalRow(`BTW ${invoice.vatRate}%`, formatCurrency(invoice.vatAmount));
+  drawTotalRow('Total (incl. BTW)', formatCurrency(invoice.totalAmount), true);
+
+  y += 6;
+
+  const paymentLines = pdf.splitTextToSize(
+    `Payment Terms: ${invoice.paymentTermsDays} days\nBank: ${invoice.fromProfile.bankName || '—'} – IBAN ${invoice.fromProfile.iban || '—'} – ${invoice.fromProfile.businessName || 'Your business'}`,
+    contentWidth
+  );
+  const cappedPaymentLines = paymentLines.slice(0, 3);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(11);
+  pdf.setTextColor(...textColor);
+  pdf.text(cappedPaymentLines, margin, Math.min(y, pageHeight - 24));
+
+  pdf.save(`${invoice.invoiceNumber || 'invoice'}.pdf`);
+}
 
 export default function InvoicesPage() {
   const [legacyBusinessProfile] = useLocalStorageState<BusinessProfile>(
@@ -43,6 +291,7 @@ export default function InvoicesPage() {
   const [paymentTermsDays, setPaymentTermsDays] = useState('');
   const [vatSelection, setVatSelection] = useState('21');
   const [customVatRate, setCustomVatRate] = useState('');
+  const [loadedInvoiceId, setLoadedInvoiceId] = useState<number | null>(null);
   const [error, setError] = useState('');
 
   const today = getTodayString();
@@ -105,6 +354,104 @@ export default function InvoicesPage() {
       { exVat: 0, vat: 0, total: 0 }
     );
   }, [storedInvoices]);
+
+  const loadedInvoice = useMemo(() => {
+    const invoice =
+      storedInvoices.find((storedInvoice): storedInvoice is InvoiceRecord => {
+        return storedInvoice.id === loadedInvoiceId && isInvoiceRecord(storedInvoice);
+      }) ?? null;
+
+    return invoice ? resolveInvoiceForDisplay(invoice, businessProfiles) : null;
+  }, [businessProfiles, loadedInvoiceId, storedInvoices]);
+
+  const previewInvoice = useMemo<InvoicePreviewData>(() => {
+    if (loadedInvoice) {
+      return loadedInvoice;
+    }
+
+    return {
+      invoiceNumber,
+      invoiceDate,
+      dueDate,
+      periodLabel,
+      description,
+      hours: Number(hours) || 0,
+      rate: Number(rate) || 0,
+      subtotal,
+      vatRate: effectiveVatRate,
+      vatAmount: calculatedVatAmount,
+      totalAmount: calculatedTotal,
+      paymentTermsDays: Number(resolvedPaymentTermsDays) || 30,
+      fromProfile: businessProfile,
+      clientProfile: selectedClientProfile,
+    };
+  }, [
+    businessProfile,
+    calculatedTotal,
+    calculatedVatAmount,
+    description,
+    dueDate,
+    effectiveVatRate,
+    hours,
+    invoiceDate,
+    invoiceNumber,
+    loadedInvoice,
+    periodLabel,
+    rate,
+    resolvedPaymentTermsDays,
+    selectedClientProfile,
+    subtotal,
+  ]);
+
+  const switchToDraftPreview = () => {
+    if (loadedInvoiceId !== null) {
+      setLoadedInvoiceId(null);
+    }
+  };
+
+  const loadSavedInvoice = (
+    invoice: InvoiceRecord,
+    options?: {
+      shouldScroll?: boolean;
+    }
+  ) => {
+    const matchingBusinessProfile = businessProfiles.find((profile) => {
+      return matchesBusinessProfile(profile, invoice.fromProfile);
+    });
+    const matchingClientProfile = clientProfiles.find((profile) => {
+      return profile.id === invoice.clientProfile.id;
+    });
+    const matchingVatOption = VAT_OPTIONS.find((option) => {
+      return option.value !== 'custom' && Number(option.value) === invoice.vatRate;
+    });
+
+    setSelectedBusinessId(matchingBusinessProfile ? String(matchingBusinessProfile.id) : '');
+    setSelectedClientId(matchingClientProfile ? String(matchingClientProfile.id) : '');
+    setInvoiceNumber(invoice.invoiceNumber);
+    setInvoiceDate(invoice.invoiceDate);
+    setPeriodLabel(invoice.periodLabel);
+    setDescription(invoice.description);
+    setHours(String(invoice.hours));
+    setRate(String(invoice.rate));
+    setPaymentTermsDays(String(invoice.paymentTermsDays));
+    setVatSelection(matchingVatOption ? matchingVatOption.value : 'custom');
+    setCustomVatRate(matchingVatOption ? '' : String(invoice.vatRate));
+    setLoadedInvoiceId(invoice.id);
+    setError('');
+
+    if (options?.shouldScroll ?? true) {
+      document.getElementById('invoice-preview')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  };
+
+  const printSavedInvoice = (invoice: InvoiceRecord) => {
+    loadSavedInvoice(invoice, { shouldScroll: false });
+    downloadInvoicePdf(resolveInvoiceForDisplay(invoice, businessProfiles));
+    setError('');
+  };
 
   const addInvoice = () => {
     setError('');
@@ -177,6 +524,7 @@ export default function InvoicesPage() {
 
     const updatedInvoices = [newInvoice, ...storedInvoices];
     setStoredInvoices(updatedInvoices);
+    setLoadedInvoiceId(newInvoice.id);
 
     setInvoiceNumber('');
     setInvoiceDate('');
@@ -189,19 +537,19 @@ export default function InvoicesPage() {
     <main className="space-y-6">
       <Link
         href="/"
-        className="inline-block rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+        className="no-print inline-block rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
       >
         ← Back
       </Link>
 
-      <div>
+      <div className="no-print">
         <h1 className="text-3xl font-semibold">Invoices</h1>
         <p className="mt-2 text-sm text-white/60">
           Build invoices from saved profiles and generate VAT totals from hours and rate.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="no-print grid gap-4 md:grid-cols-3">
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="text-sm text-white/50">Invoiced ex VAT</div>
           <div className="mt-2 text-3xl font-semibold">{formatCurrency(totals.exVat)}</div>
@@ -218,8 +566,8 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="space-y-6">
+      <section className="invoice-layout grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="no-print space-y-6">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
@@ -243,7 +591,10 @@ export default function InvoicesPage() {
                   <select
                     className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
                     value={resolvedBusinessProfileId}
-                    onChange={(e) => setSelectedBusinessId(e.target.value)}
+                    onChange={(e) => {
+                      switchToDraftPreview();
+                      setSelectedBusinessId(e.target.value);
+                    }}
                   >
                     {businessProfiles.map((profile) => (
                       <option key={profile.id} value={profile.id} className="text-black">
@@ -269,7 +620,10 @@ export default function InvoicesPage() {
                 <select
                   className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
                   value={selectedClientId}
-                  onChange={(e) => setSelectedClientId(e.target.value)}
+                  onChange={(e) => {
+                    switchToDraftPreview();
+                    setSelectedClientId(e.target.value);
+                  }}
                 >
                   <option value="" className="text-black">
                     Select a saved client profile
@@ -293,7 +647,10 @@ export default function InvoicesPage() {
                   className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
                   placeholder="202603-01"
                   value={invoiceNumber}
-                  onChange={(e) => setInvoiceNumber(e.target.value)}
+                  onChange={(e) => {
+                    switchToDraftPreview();
+                    setInvoiceNumber(e.target.value);
+                  }}
                 />
               </label>
 
@@ -305,7 +662,10 @@ export default function InvoicesPage() {
                   min={minDate}
                   max={today}
                   value={invoiceDate}
-                  onChange={(e) => setInvoiceDate(e.target.value)}
+                  onChange={(e) => {
+                    switchToDraftPreview();
+                    setInvoiceDate(e.target.value);
+                  }}
                 />
                 <p className="text-xs text-white/45">
                   This is the date printed on the invoice document.
@@ -318,7 +678,10 @@ export default function InvoicesPage() {
                   className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
                   placeholder="March 2026"
                   value={periodLabel}
-                  onChange={(e) => setPeriodLabel(e.target.value)}
+                  onChange={(e) => {
+                    switchToDraftPreview();
+                    setPeriodLabel(e.target.value);
+                  }}
                 />
                 <p className="text-xs text-white/45">
                   Example: “March 2026” or “Q1 2026”.
@@ -332,7 +695,10 @@ export default function InvoicesPage() {
                   type="number"
                   min="1"
                   value={resolvedPaymentTermsDays}
-                  onChange={(e) => setPaymentTermsDays(e.target.value)}
+                  onChange={(e) => {
+                    switchToDraftPreview();
+                    setPaymentTermsDays(e.target.value);
+                  }}
                 />
                 <p className="text-xs text-white/45">
                   Due date will be calculated automatically.
@@ -350,7 +716,10 @@ export default function InvoicesPage() {
                   className="min-h-28 w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
                   placeholder="Consultancy services for monthly project support"
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    switchToDraftPreview();
+                    setDescription(e.target.value);
+                  }}
                 />
               </label>
 
@@ -364,7 +733,10 @@ export default function InvoicesPage() {
                     min="0.25"
                     placeholder="182"
                     value={hours}
-                    onChange={(e) => setHours(e.target.value)}
+                    onChange={(e) => {
+                      switchToDraftPreview();
+                      setHours(e.target.value);
+                    }}
                   />
                 </label>
 
@@ -377,7 +749,10 @@ export default function InvoicesPage() {
                     min="0.01"
                     placeholder="105"
                     value={rate}
-                    onChange={(e) => setRate(e.target.value)}
+                    onChange={(e) => {
+                      switchToDraftPreview();
+                      setRate(e.target.value);
+                    }}
                   />
                 </label>
 
@@ -386,7 +761,10 @@ export default function InvoicesPage() {
                   <select
                     className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
                     value={vatSelection}
-                    onChange={(e) => setVatSelection(e.target.value)}
+                    onChange={(e) => {
+                      switchToDraftPreview();
+                      setVatSelection(e.target.value);
+                    }}
                   >
                     {VAT_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value} className="text-black">
@@ -407,7 +785,10 @@ export default function InvoicesPage() {
                     min="0"
                     placeholder="21"
                     value={customVatRate}
-                    onChange={(e) => setCustomVatRate(e.target.value)}
+                    onChange={(e) => {
+                      switchToDraftPreview();
+                      setCustomVatRate(e.target.value);
+                    }}
                   />
                 </label>
               )}
@@ -443,41 +824,60 @@ export default function InvoicesPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="overflow-hidden rounded-[2rem] border border-[#d8d0c0] bg-[#f6efe1] text-slate-900 shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
-            <div className="border-b border-[#d8d0c0] px-6 py-5">
-              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Invoice Preview</div>
-              <div className="mt-2 text-3xl font-semibold">INVOICE</div>
+        <div className="print-shell space-y-6">
+          <div
+            id="invoice-preview"
+            className="invoice-preview-card overflow-hidden rounded-[2rem] bg-white p-8 text-slate-900 shadow-[0_30px_80px_rgba(0,0,0,0.18)]"
+          >
+            <div className="flex items-start justify-between gap-8">
+              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[1.5rem] bg-slate-100">
+                {previewInvoice.fromProfile.letterheadDataUrl ? (
+                  <Image
+                    src={previewInvoice.fromProfile.letterheadDataUrl}
+                    alt={`${previewInvoice.fromProfile.businessName || 'Business'} logo`}
+                    width={112}
+                    height={112}
+                    className="h-28 w-28 object-contain"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="text-sm text-slate-400">Logo</div>
+                )}
+              </div>
+
+              <div className="pt-3 text-right">
+                <div className="text-4xl font-semibold tracking-tight">INVOICE</div>
+              </div>
             </div>
 
-            <div className="grid gap-8 px-6 py-6 md:grid-cols-2">
+            <div className="mt-10 grid gap-10 md:grid-cols-2">
               <div>
                 <div className="mb-3 text-xs uppercase tracking-[0.18em] text-slate-500">From</div>
                 <div className="space-y-1 text-sm text-slate-800">
                   <div className="text-lg font-semibold">
-                    {businessProfile.businessName || 'Your business name'}
+                    {previewInvoice.fromProfile.businessName || 'Your business name'}
                   </div>
-                  <div>{businessProfile.contactName || 'Contact name'}</div>
-                  <div>{businessProfile.streetAddress || 'Street and number'}</div>
-                  <div>{businessProfile.postalCodeCity || 'Postal code and city'}</div>
-                  <div>KvK: {businessProfile.kvkNumber || '—'}</div>
-                  <div>BTW: {businessProfile.vatNumber || '—'}</div>
-                  <div>IBAN: {businessProfile.iban || '—'}</div>
+                  <div>{previewInvoice.fromProfile.contactName || 'Contact name'}</div>
+                  <div>{previewInvoice.fromProfile.streetAddress || 'Street and number'}</div>
+                  <div>{previewInvoice.fromProfile.postalCodeCity || 'Postal code and city'}</div>
+                  <div>KvK: {previewInvoice.fromProfile.kvkNumber || '—'}</div>
+                  <div>BTW: {previewInvoice.fromProfile.vatNumber || '—'}</div>
+                  <div>IBAN: {previewInvoice.fromProfile.iban || '—'}</div>
                 </div>
               </div>
 
               <div>
                 <div className="mb-3 text-xs uppercase tracking-[0.18em] text-slate-500">To</div>
-                {selectedClientProfile ? (
+                {previewInvoice.clientProfile ? (
                   <div className="space-y-1 text-sm text-slate-800">
-                    <div className="text-lg font-semibold">{selectedClientProfile.companyName}</div>
-                    {selectedClientProfile.attentionName && (
-                      <div>{selectedClientProfile.attentionName}</div>
+                    <div className="text-lg font-semibold">{previewInvoice.clientProfile.companyName}</div>
+                    {previewInvoice.clientProfile.attentionName && (
+                      <div>{previewInvoice.clientProfile.attentionName}</div>
                     )}
-                    <div>{selectedClientProfile.streetAddress}</div>
-                    <div>{selectedClientProfile.postalCodeCity}</div>
-                    <div>KvK: {selectedClientProfile.kvkNumber || '—'}</div>
-                    <div>BTW: {selectedClientProfile.vatNumber || '—'}</div>
+                    <div>{previewInvoice.clientProfile.streetAddress}</div>
+                    <div>{previewInvoice.clientProfile.postalCodeCity}</div>
+                    <div>KvK: {previewInvoice.clientProfile.kvkNumber || '—'}</div>
+                    <div>BTW: {previewInvoice.clientProfile.vatNumber || '—'}</div>
                   </div>
                 ) : (
                   <div className="text-sm text-slate-500">
@@ -487,20 +887,22 @@ export default function InvoicesPage() {
               </div>
             </div>
 
-            <div className="grid gap-6 border-y border-[#d8d0c0] px-6 py-5 md:grid-cols-2">
+            <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="space-y-2 text-sm text-slate-800">
-                <div>Invoice Date: {formatDate(invoiceDate)}</div>
-                <div>Invoice Number: {invoiceNumber || '—'}</div>
-                <div>Period: {periodLabel || '—'}</div>
+                <div>Invoice Date: {formatDate(previewInvoice.invoiceDate)}</div>
+                <div>Invoice Number: {previewInvoice.invoiceNumber || '—'}</div>
+                <div>Period: {previewInvoice.periodLabel || '—'}</div>
               </div>
               <div className="space-y-2 text-sm text-slate-800">
-                <div>Payment Terms: {resolvedPaymentTermsDays} days</div>
-                <div>Due Date: {formatDate(dueDate)}</div>
-                <div>Bank: {businessProfile.bankName || '—'} – {businessProfile.iban || '—'}</div>
+                <div>Payment Terms: {previewInvoice.paymentTermsDays} days</div>
+                <div>Due Date: {formatDate(previewInvoice.dueDate)}</div>
+                <div>
+                  Bank: {previewInvoice.fromProfile.bankName || '—'} – {previewInvoice.fromProfile.iban || '—'}
+                </div>
               </div>
             </div>
 
-            <div className="px-6 py-6">
+            <div className="mt-10">
               <div className="grid grid-cols-[1.5fr_0.45fr_0.55fr_0.7fr] gap-3 text-xs uppercase tracking-[0.14em] text-slate-500">
                 <div>Description</div>
                 <div>Hours</div>
@@ -508,50 +910,57 @@ export default function InvoicesPage() {
                 <div>Amount (EUR)</div>
               </div>
               <div className="mt-3 grid grid-cols-[1.5fr_0.45fr_0.55fr_0.7fr] gap-3 text-sm text-slate-800">
-                <div>{description || 'Consultancy services for project work'}</div>
-                <div>{hours || '0'}</div>
-                <div>{rate ? formatCurrency(Number(rate)) : formatCurrency(0)}</div>
-                <div>{formatCurrency(subtotal)}</div>
+                <div>{previewInvoice.description || 'Consultancy services for project work'}</div>
+                <div>{previewInvoice.hours || '0'}</div>
+                <div>{formatCurrency(previewInvoice.rate)}</div>
+                <div>{formatCurrency(previewInvoice.subtotal)}</div>
               </div>
 
-              <div className="mt-8 space-y-3 border-t border-[#d8d0c0] pt-4 text-sm text-slate-800">
+              <div className="mt-10 space-y-3 text-sm text-slate-800">
                 <div className="flex items-center justify-between">
                   <span>Subtotal (excl. BTW)</span>
-                  <span>{formatCurrency(subtotal)}</span>
+                  <span>{formatCurrency(previewInvoice.subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>BTW {effectiveVatRate}%</span>
-                  <span>{formatCurrency(calculatedVatAmount)}</span>
+                  <span>BTW {previewInvoice.vatRate}%</span>
+                  <span>{formatCurrency(previewInvoice.vatAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-base font-semibold">
                   <span>Total (incl. BTW)</span>
-                  <span>{formatCurrency(calculatedTotal)}</span>
+                  <span>{formatCurrency(previewInvoice.totalAmount)}</span>
                 </div>
               </div>
 
-              <div className="mt-8 border-t border-[#d8d0c0] pt-4 text-sm text-slate-700">
-                Payment Terms: {resolvedPaymentTermsDays} days
+              <div className="mt-10 text-sm leading-6 text-slate-700">
+                Payment Terms: {previewInvoice.paymentTermsDays} days
                 <br />
-                Bank: {businessProfile.bankName || '—'} – IBAN {businessProfile.iban || '—'} – {businessProfile.businessName || 'Your business'}
+                Bank: {previewInvoice.fromProfile.bankName || '—'} – IBAN {previewInvoice.fromProfile.iban || '—'} – {previewInvoice.fromProfile.businessName || 'Your business'}
               </div>
             </div>
           </div>
 
           {!isBusinessProfileComplete(businessProfile) && (
-            <div className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
+            <div className="no-print rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
               Your business profile is not complete yet. Add your invoice details on the Profiles page before saving invoices.
             </div>
           )}
 
           {clientProfiles.length === 0 && (
-            <div className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
+            <div className="no-print rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
               No client profiles saved yet. Add one on the Profiles page so the invoice To section can be filled automatically.
             </div>
           )}
         </div>
       </section>
 
-      <div className="space-y-3">
+      <section className="no-print space-y-3">
+        <div>
+          <h2 className="text-2xl font-semibold">Saved invoices</h2>
+          <p className="mt-2 text-sm text-white/60">
+            Load a saved invoice into the preview or download a clean one-page PDF from the Print button.
+          </p>
+        </div>
+
         {storedInvoices.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">
             No invoices yet.
@@ -596,6 +1005,21 @@ export default function InvoicesPage() {
                       <div className="mt-2 text-xl font-semibold">{formatCurrency(invoice.totalAmount)}</div>
                     </div>
                   </div>
+
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => loadSavedInvoice(invoice)}
+                      className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                    >
+                      Load
+                    </button>
+                    <button
+                      onClick={() => printSavedInvoice(invoice)}
+                      className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-black hover:opacity-90"
+                    >
+                      Print
+                    </button>
+                  </div>
                 </div>
               );
             }
@@ -628,7 +1052,7 @@ export default function InvoicesPage() {
             );
           })
         )}
-      </div>
+      </section>
     </main>
   );
 }
