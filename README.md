@@ -31,6 +31,20 @@ That tradeoff keeps the product lightweight, inexpensive to run, and well scoped
 - `BTW Summary`: review deductible VAT and expense totals by quarter
 - `Local persistence`: store everything in browser `localStorage`
 
+## Screenshots
+
+### Dashboard Overview
+
+The landing page gives quick access to the main bookkeeping workflows and shows the product's overall visual direction.
+
+![Bookkeeping Admin dashboard overview](public/screenshots/dashboard-overview.png)
+
+### Expenses Flow
+
+The expenses page shows the local-first receipt logging flow, VAT selection, and running totals for each expense entry.
+
+![Bookkeeping Admin expenses flow](public/screenshots/expenses-flow.png)
+
 ## Project Structure
 
 ```text
