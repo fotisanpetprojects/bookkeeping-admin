@@ -128,6 +128,12 @@ export function getMinDateString() {
   return d.toISOString().split('T')[0];
 }
 
+export function getMaxFutureDateString() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().split('T')[0];
+}
+
 export function addDays(dateString: string, days: number) {
   const d = new Date(dateString);
   d.setDate(d.getDate() + days);

@@ -5,13 +5,13 @@ export default function Home() {
     <div className="space-y-8">
       <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
         <p className="mb-3 text-sm uppercase tracking-[0.2em] text-cyan-300">
-          Freelancer Finance OS
+          Bookkeeping Admin
         </p>
         <h1 className="mb-4 max-w-2xl text-4xl font-semibold leading-tight">
           Keep your invoices, receipts and quarterly BTW under control.
         </h1>
         <p className="max-w-2xl text-white/70">
-          A simple admin tool for freelancers to track billing profiles, invoices, expenses, receipts and VAT without spreadsheet chaos.
+          A simple admin tool for independent professionals to track billing profiles, invoices, expenses, receipts and VAT without spreadsheet chaos.
         </p>
 
         <div className="mt-6 flex gap-3">

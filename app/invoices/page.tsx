@@ -16,8 +16,8 @@ import {
   addDays,
   formatCurrency,
   formatDate,
+  getMaxFutureDateString,
   getMinDateString,
-  getTodayString,
   isBusinessProfileComplete,
   isInvoiceRecord,
   toBusinessProfile,
@@ -294,8 +294,8 @@ export default function InvoicesPage() {
   const [loadedInvoiceId, setLoadedInvoiceId] = useState<number | null>(null);
   const [error, setError] = useState('');
 
-  const today = getTodayString();
   const minDate = getMinDateString();
+  const maxFutureDate = getMaxFutureDateString();
   const resolvedBusinessProfileId =
     selectedBusinessId || (businessProfiles[0] ? String(businessProfiles[0].id) : '');
   const businessProfile = useMemo<BusinessProfile>(() => {
@@ -478,8 +478,8 @@ export default function InvoicesPage() {
       return;
     }
 
-    if (invoiceDate < minDate || invoiceDate > today) {
-      setError('Invoice date must be within the last 1 year and not in the future.');
+    if (invoiceDate < minDate || invoiceDate > maxFutureDate) {
+      setError('Invoice date must be within the last 1 year and up to 1 year in the future.');
       return;
     }
 
@@ -660,7 +660,7 @@ export default function InvoicesPage() {
                   className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
                   type="date"
                   min={minDate}
-                  max={today}
+                  max={maxFutureDate}
                   value={invoiceDate}
                   onChange={(e) => {
                     switchToDraftPreview();

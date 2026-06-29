@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Freelancer Admin',
+  title: 'Bookkeeping Admin',
   description: 'Track invoices, expenses, receipts and BTW',
 };
 
@@ -19,7 +19,7 @@ export default function RootLayout({
           <header className="border-b border-white/10 backdrop-blur">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
               <Link href="/" className="text-xl font-semibold tracking-tight">
-                Freelancer Admin
+                Bookkeeping Admin
               </Link>
 
               <nav className="flex gap-3 text-sm">
