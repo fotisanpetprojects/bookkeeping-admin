@@ -9,6 +9,7 @@ import {
   getInvoiceDate,
   getInvoiceNetAmount,
   getQuarter,
+  isUsableBookkeepingDate,
   sumEuros,
 } from '@/lib/billing';
 
@@ -63,7 +64,7 @@ function createBucket(year: number, quarter: number): Bucket {
 }
 
 function isValidDate(dateString: string) {
-  return Boolean(dateString) && !Number.isNaN(new Date(dateString).getTime());
+  return isUsableBookkeepingDate(dateString);
 }
 
 export default function BtwSummaryPage() {
@@ -225,7 +226,8 @@ export default function BtwSummaryPage() {
 
       {(undatedInvoices > 0 || undatedExpenses > 0) && (
         <div className="rounded-3xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-100">
-          Excluded from these totals because of a missing or invalid date:{' '}
+          Excluded from these totals because of a missing, invalid or implausible date
+          (for example a mistyped year):{' '}
           {undatedInvoices > 0 && `${undatedInvoices} invoice(s)`}
           {undatedInvoices > 0 && undatedExpenses > 0 && ', '}
           {undatedExpenses > 0 && `${undatedExpenses} expense(s)`}. Fix the dates so they

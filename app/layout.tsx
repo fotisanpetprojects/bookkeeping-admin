@@ -1,5 +1,6 @@
 import './globals.css';
 import Link from 'next/link';
+import NavTabs from '@/app/components/NavTabs';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -22,26 +23,7 @@ export default function RootLayout({
                 Bookkeeping Admin
               </Link>
 
-              <nav className="flex gap-3 text-sm">
-                <Link href="/" className="rounded-full border border-white/10 px-4 py-2 hover:bg-white/10">
-                  Dashboard
-                </Link>
-                <Link href="/invoices" className="rounded-full border border-white/10 px-4 py-2 hover:bg-white/10">
-                  Invoices
-                </Link>
-                <Link href="/clients" className="rounded-full border border-white/10 px-4 py-2 hover:bg-white/10">
-                  Profiles
-                </Link>
-                <Link href="/expenses" className="rounded-full border border-white/10 px-4 py-2 hover:bg-white/10">
-                  Expenses
-                </Link>
-                <Link href="/btw-summary" className="rounded-full border border-white/10 px-4 py-2 hover:bg-white/10">
-                  BTW Summary
-                </Link>
-                <Link href="/belastingdienst" className="rounded-full border border-white/10 px-4 py-2 hover:bg-white/10">
-                  Belastingdienst
-                </Link>
-              </nav>
+              <NavTabs />
             </div>
           </header>
 

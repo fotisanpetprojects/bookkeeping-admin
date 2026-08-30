@@ -13,6 +13,8 @@ import {
   getQuarter,
   isInvoiceOverdue,
   isInvoicePaid,
+  isPlausibleBookkeepingYear,
+  isUsableBookkeepingDate,
   sumEuros,
 } from '@/lib/billing';
 import {
@@ -38,7 +40,7 @@ type Expense = {
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function validDate(value: string) {
-  return Boolean(value) && !Number.isNaN(new Date(value).getTime());
+  return isUsableBookkeepingDate(value);
 }
 
 function Stat({ label, value, sub, tone }: {
@@ -82,7 +84,7 @@ export default function BelastingdienstPage() {
     const found = new Set<number>([currentYear - 1, currentYear, currentYear + 1]);
 
     // A typo in a date can otherwise put a year like 3000 in the dropdown.
-    const plausible = (year: number) => year >= 2000 && year <= currentYear + 5;
+    const plausible = (year: number) => isPlausibleBookkeepingYear(year, currentYear);
 
     for (const invoice of invoices) {
       const date = getInvoiceDate(invoice);

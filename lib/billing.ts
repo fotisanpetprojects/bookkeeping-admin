@@ -249,3 +249,27 @@ const euroWholeFormatter = new Intl.NumberFormat('nl-NL', {
 export function formatEuroWhole(value: number) {
   return euroWholeFormatter.format(value);
 }
+
+/**
+ * Bookkeeping only ever covers a handful of years around now. A mistyped date
+ * (year 3000, year 20) would otherwise create its own quarter and sit in every
+ * year picker, so implausible years are reported rather than silently charted.
+ */
+export function isPlausibleBookkeepingYear(year: number, referenceYear = new Date().getFullYear()) {
+  return Number.isFinite(year) && year >= 2000 && year <= referenceYear + 5;
+}
+
+/** True when a date string is both parseable and in a plausible bookkeeping year. */
+export function isUsableBookkeepingDate(dateString: string) {
+  if (!dateString) return false;
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return false;
+  return isPlausibleBookkeepingYear(date.getFullYear());
+}
+
+/** Earliest date the forms accept: far enough back to backfill previous years. */
+export function getBackfillMinDateString() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 5);
+  return d.toISOString().split('T')[0];
+}

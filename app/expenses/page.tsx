@@ -3,7 +3,13 @@
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
-import { formatCurrency, roundCents } from '@/lib/billing';
+import {
+  formatCurrency,
+  getBackfillMinDateString,
+  isUsableBookkeepingDate,
+  roundCents,
+  sumEuros,
+} from '@/lib/billing';
 
 type Expense = {
   id: number;
@@ -37,9 +43,8 @@ function getTodayString() {
 }
 
 function getMinDateString() {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 1);
-  return d.toISOString().split('T')[0];
+  // Previous bookkeeping years must be enterable, not just the last 12 months.
+  return getBackfillMinDateString();
 }
 
 function formatBytes(bytes: number) {
@@ -57,6 +62,7 @@ export default function ExpensesPage() {
   const [receiptName, setReceiptName] = useState('');
   const [receiptDataUrl, setReceiptDataUrl] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [yearFilter, setYearFilter] = useState('all');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -243,9 +249,42 @@ export default function ExpensesPage() {
     }
   };
 
-  const sortedExpenses = useMemo(() => {
-    return [...expenses].sort((a, b) => b.date.localeCompare(a.date));
+  const years = useMemo(() => {
+    const found = new Set<number>();
+
+    for (const expense of expenses) {
+      if (isUsableBookkeepingDate(expense.date)) {
+        found.add(new Date(expense.date).getFullYear());
+      }
+    }
+
+    return Array.from(found).sort((a, b) => b - a);
   }, [expenses]);
+
+  const sortedExpenses = useMemo(() => {
+    const filtered =
+      yearFilter === 'all'
+        ? expenses
+        : expenses.filter(
+            (expense) =>
+              isUsableBookkeepingDate(expense.date) &&
+              String(new Date(expense.date).getFullYear()) === yearFilter
+          );
+
+    return [...filtered].sort((a, b) => b.date.localeCompare(a.date));
+  }, [expenses, yearFilter]);
+
+  const shownTotals = useMemo(() => {
+    return {
+      exVat: sumEuros(sortedExpenses.map((expense) => expense.amountExVat)),
+      vat: sumEuros(sortedExpenses.map((expense) => expense.vatAmount)),
+      total: sumEuros(sortedExpenses.map((expense) => expense.totalAmount)),
+    };
+  }, [sortedExpenses]);
+
+  const undatedCount = expenses.filter(
+    (expense) => !isUsableBookkeepingDate(expense.date)
+  ).length;
 
   return (
     <main className="space-y-6">
@@ -256,12 +295,58 @@ export default function ExpensesPage() {
         ← Back
       </Link>
 
-      <div>
-        <h1 className="text-3xl font-semibold">Expenses</h1>
-        <p className="mt-2 text-sm text-white/60">
-          Allowed date range: {minDate} to {today}
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold">Expenses</h1>
+          <p className="mt-2 text-sm text-white/60">
+            Allowed date range: {minDate} to {today}
+          </p>
+        </div>
+
+        {years.length > 0 && (
+          <label className="text-sm text-white/60">
+            <span className="mb-2 block">Year</span>
+            <select
+              className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+              value={yearFilter}
+              onChange={(event) => setYearFilter(event.target.value)}
+            >
+              <option value="all" className="text-black">
+                All years
+              </option>
+              {years.map((year) => (
+                <option key={year} value={String(year)} className="text-black">
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
+
+      {expenses.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <div className="text-sm text-white/50">Ex VAT</div>
+            <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.exVat)}</div>
+          </div>
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <div className="text-sm text-white/50">Deductible VAT</div>
+            <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.vat)}</div>
+          </div>
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <div className="text-sm text-white/50">Incl VAT</div>
+            <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.total)}</div>
+          </div>
+        </div>
+      )}
+
+      {undatedCount > 0 && (
+        <div className="rounded-3xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-100">
+          {undatedCount} expense(s) have a missing, invalid or implausible date and are
+          left out of the year filter and totals. Edit them to fix the date.
+        </div>
+      )}
 
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
         {editingId !== null && (
@@ -376,6 +461,12 @@ export default function ExpensesPage() {
       </div>
 
       <div className="space-y-3">
+        {sortedExpenses.length === 0 && expenses.length > 0 && (
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">
+            No expenses in {yearFilter}.
+          </div>
+        )}
+
         {sortedExpenses.map((expense) => (
           <div
             key={expense.id}
