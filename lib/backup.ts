@@ -135,23 +135,48 @@ export function parseBackup(text: string): BackupPayload {
 }
 
 type WithId = { id?: unknown };
+type WithInvoiceNumber = { invoiceNumber?: unknown };
+
+function identityOf(item: unknown) {
+  return String((item as WithId)?.id ?? JSON.stringify(item));
+}
 
 /**
- * Union of current and incoming records by id. Anything already on this device
- * wins, so a restore can only ever add entries — never overwrite or drop one.
+ * An invoice number is the real-world identity of an invoice. Two records with
+ * the same number are the same invoice even when their internal ids differ —
+ * which is exactly what happens when a backup is built from source documents
+ * for months already entered by hand.
+ */
+function invoiceNumberOf(item: unknown) {
+  const raw = (item as WithInvoiceNumber)?.invoiceNumber;
+  return typeof raw === 'string' && raw.trim() ? raw.trim().toLowerCase() : null;
+}
+
+/**
+ * Union of current and incoming records by identity. Anything already on this
+ * device wins, so a restore can only ever add entries — never overwrite or drop
+ * one, and never duplicate an invoice that is already booked.
  */
 function mergeById(current: unknown, incoming: unknown) {
   const currentList = Array.isArray(current) ? current : [];
   const incomingList = Array.isArray(incoming) ? incoming : [];
-  const seen = new Set(
-    currentList.map((item) => String((item as WithId)?.id ?? JSON.stringify(item)))
+  const seenIds = new Set(currentList.map(identityOf));
+  const seenNumbers = new Set(
+    currentList.map(invoiceNumberOf).filter((value): value is string => value !== null)
   );
+
   const additions = incomingList.filter((item) => {
-    const id = String((item as WithId)?.id ?? JSON.stringify(item));
-    if (seen.has(id)) {
+    const id = identityOf(item);
+    const number = invoiceNumberOf(item);
+
+    if (seenIds.has(id) || (number !== null && seenNumbers.has(number))) {
       return false;
     }
-    seen.add(id);
+
+    seenIds.add(id);
+    if (number !== null) {
+      seenNumbers.add(number);
+    }
     return true;
   });
 
