@@ -24,6 +24,7 @@ import {
   toLocalIsoDate,
 } from '@/lib/tax';
 import { Donut, ProjectionChart, QuarterBars, SERIES } from '@/app/components/charts';
+import { downloadJsonFile } from '@/lib/backup';
 
 type Expense = {
   id: number;
@@ -76,14 +77,25 @@ export default function BelastingdienstPage() {
   const [settingsError, setSettingsError] = useState('');
 
   const years = useMemo(() => {
-    const found = new Set<number>([currentYear]);
+    // Always offer last year, this year and next year, so a year can be selected
+    // before any data exists for it.
+    const found = new Set<number>([currentYear - 1, currentYear, currentYear + 1]);
+
+    // A typo in a date can otherwise put a year like 3000 in the dropdown.
+    const plausible = (year: number) => year >= 2000 && year <= currentYear + 5;
 
     for (const invoice of invoices) {
       const date = getInvoiceDate(invoice);
-      if (validDate(date)) found.add(new Date(date).getFullYear());
+      if (validDate(date)) {
+        const year = new Date(date).getFullYear();
+        if (plausible(year)) found.add(year);
+      }
     }
     for (const expense of expenses) {
-      if (validDate(expense.date)) found.add(new Date(expense.date).getFullYear());
+      if (validDate(expense.date)) {
+        const year = new Date(expense.date).getFullYear();
+        if (plausible(year)) found.add(year);
+      }
     }
 
     return Array.from(found).sort((a, b) => b - a);
@@ -163,6 +175,12 @@ export default function BelastingdienstPage() {
     const cumulativeRevenue = cumulative(monthlyRevenue, avgRevenue);
     const cumulativeExpenses = cumulative(monthlyExpenses, avgExpenses);
 
+    // Tax accrued month by month, so the chart shows the bill growing rather than
+    // only its end state. Same euro scale as the other two series.
+    const cumulativeTax = cumulativeRevenue.map((revenue, month) =>
+      estimateIncomeTax(revenue, cumulativeExpenses[month], settings).totalTax
+    );
+
     const taxToDate = estimateIncomeTax(revenueExVat, expensesExVat, settings);
     const taxProjected = estimateIncomeTax(
       cumulativeRevenue[11],
@@ -189,6 +207,7 @@ export default function BelastingdienstPage() {
       quarters,
       cumulativeRevenue,
       cumulativeExpenses,
+      cumulativeTax,
       lastMonthWithData,
       taxToDate,
       taxProjected,
@@ -207,6 +226,55 @@ export default function BelastingdienstPage() {
 
   const deadline = nextQuarter ? getBtwDeadline(year, nextQuarter.quarter) : null;
   const deadlineInfo = deadline ? describeDeadline(deadline) : null;
+
+  const exportYear = () => {
+    downloadJsonFile(`belastingdienst-${year}.json`, {
+      format: 'bookkeeping-admin-tax-year',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      year,
+      currency: 'EUR',
+      totals: {
+        revenueExVat: data.revenueExVat,
+        expensesExVat: data.expensesExVat,
+        invoicedInclVat: data.invoicedInclVat,
+        outputVat: data.outputVat,
+        inputVat: data.inputVat,
+        netVat: data.netVat,
+        paid: data.paidTotal,
+        outstanding: data.outstanding,
+        overdue: data.overdueTotal,
+        overdueCount: data.overdueCount,
+        unpaidCount: data.unpaidCount,
+        setAside,
+      },
+      quarters: data.quarters.map((quarter) => ({
+        quarter: quarter.quarter,
+        outputVat: quarter.outputVat,
+        inputVat: quarter.inputVat,
+        netVat: quarter.net,
+        entries: quarter.count,
+        deadline: toLocalIsoDate(getBtwDeadline(year, quarter.quarter)),
+      })),
+      monthly: MONTHS.map((month, index) => ({
+        month,
+        monthNumber: index + 1,
+        source: index <= data.lastMonthWithData ? 'actual' : 'projected',
+        cumulativeRevenueExVat: data.cumulativeRevenue[index],
+        cumulativeExpensesExVat: data.cumulativeExpenses[index],
+        cumulativeIncomeTaxEstimate: data.cumulativeTax[index],
+      })),
+      incomeTax: {
+        onProfitSoFar: data.taxToDate,
+        projectedFullYear: data.taxProjected,
+        settings,
+      },
+      invoices: data.yearInvoices,
+      expenses: data.yearExpenses,
+      disclaimer:
+        'Income tax figures are estimates for planning only, calculated from the editable settings included here. They are not filing figures or tax advice.',
+    });
+  };
 
   const updateSetting = (patch: Partial<TaxSettings>) => {
     try {
@@ -228,7 +296,15 @@ export default function BelastingdienstPage() {
           </p>
         </div>
 
-        <label className="text-sm text-white/60">
+        <div className="flex flex-wrap items-end gap-3">
+          <button
+            onClick={exportYear}
+            className="rounded-full border border-white/10 px-4 py-3 text-sm hover:bg-white/10"
+          >
+            Download {year} as JSON
+          </button>
+
+          <label className="text-sm text-white/60">
           <span className="mb-2 block">Tax year</span>
           <select
             className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
@@ -241,7 +317,8 @@ export default function BelastingdienstPage() {
               </option>
             ))}
           </select>
-        </label>
+          </label>
+        </div>
       </div>
 
       <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-6">
@@ -349,7 +426,8 @@ export default function BelastingdienstPage() {
             actualThrough={data.lastMonthWithData}
             series={[
               { label: 'Revenue ex VAT', color: SERIES.blue, values: data.cumulativeRevenue },
-              { label: 'Expenses ex VAT', color: SERIES.orange, values: data.cumulativeExpenses },
+              { label: 'Income tax (est.)', color: SERIES.orange, values: data.cumulativeTax },
+              { label: 'Expenses ex VAT', color: SERIES.aqua, values: data.cumulativeExpenses },
             ]}
           />
         </div>
@@ -438,8 +516,41 @@ export default function BelastingdienstPage() {
                   {formatCurrency(data.taxToDate.totalTax)}
                 </td>
               </tr>
+              <tr>
+                <td colSpan={2} className="pt-2 text-xs text-white/40">
+                  The rows above are calculated on the profit recorded so far.
+                </td>
+              </tr>
             </tbody>
           </table>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+            <div className="text-xs uppercase tracking-[0.14em] text-white/45">
+              On profit so far
+            </div>
+            <div className="mt-2 text-2xl font-semibold">
+              {formatCurrency(data.taxToDate.totalTax)}
+            </div>
+            <div className="mt-1 text-xs text-white/50">
+              Profit {formatCurrency(data.taxToDate.profit)} · effective{' '}
+              {data.taxToDate.effectiveRate.toFixed(1)}%
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+            <div className="text-xs uppercase tracking-[0.14em] text-white/45">
+              Projected full year
+            </div>
+            <div className="mt-2 text-2xl font-semibold">
+              {formatCurrency(data.taxProjected.totalTax)}
+            </div>
+            <div className="mt-1 text-xs text-white/50">
+              Profit {formatCurrency(data.taxProjected.profit)} · effective{' '}
+              {data.taxProjected.effectiveRate.toFixed(1)}%
+            </div>
+          </div>
         </div>
 
         {showAssumptions && (

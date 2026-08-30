@@ -72,9 +72,8 @@ export function backupFileName(date = new Date()) {
   return `bookkeeping-backup-${stamp}.json`;
 }
 
-/** Serialise the current data and hand it to the browser as a .json download. */
-export function downloadBackup() {
-  const payload = buildBackup();
+/** Hand any JSON-serialisable payload to the browser as a .json download. */
+export function downloadJsonFile(fileName: string, payload: unknown) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
     type: 'application/json',
   });
@@ -82,12 +81,17 @@ export function downloadBackup() {
   const link = document.createElement('a');
 
   link.href = url;
-  link.download = backupFileName();
+  link.download = fileName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
 
+/** Serialise the current data and hand it to the browser as a .json download. */
+export function downloadBackup() {
+  const payload = buildBackup();
+  downloadJsonFile(backupFileName(), payload);
   return payload;
 }
 
