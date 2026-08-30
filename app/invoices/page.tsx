@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { jsPDF } from 'jspdf';
-import { useLocalStorageState } from '@/lib/local-storage';
+import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
 import {
   BusinessProfile,
   ClientProfile,
@@ -20,6 +20,8 @@ import {
   getMinDateString,
   isBusinessProfileComplete,
   isInvoiceRecord,
+  roundCents,
+  sumEuros,
   toBusinessProfile,
 } from '@/lib/billing';
 
@@ -292,7 +294,9 @@ export default function InvoicesPage() {
   const [vatSelection, setVatSelection] = useState('21');
   const [customVatRate, setCustomVatRate] = useState('');
   const [loadedInvoiceId, setLoadedInvoiceId] = useState<number | null>(null);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const minDate = getMinDateString();
   const maxFutureDate = getMaxFutureDateString();
@@ -324,15 +328,15 @@ export default function InvoicesPage() {
   const subtotal = useMemo(() => {
     const parsedHours = Number(hours) || 0;
     const parsedRate = Number(rate) || 0;
-    return parsedHours * parsedRate;
+    return roundCents(parsedHours * parsedRate);
   }, [hours, rate]);
 
   const calculatedVatAmount = useMemo(() => {
-    return subtotal * (effectiveVatRate / 100);
+    return roundCents(subtotal * (effectiveVatRate / 100));
   }, [subtotal, effectiveVatRate]);
 
   const calculatedTotal = useMemo(() => {
-    return subtotal + calculatedVatAmount;
+    return roundCents(subtotal + calculatedVatAmount);
   }, [subtotal, calculatedVatAmount]);
 
   const dueDate = useMemo(() => {
@@ -344,15 +348,15 @@ export default function InvoicesPage() {
   }, [invoiceDate, resolvedPaymentTermsDays]);
 
   const totals = useMemo(() => {
-    return storedInvoices.reduce(
-      (summary, invoice) => {
-        summary.exVat += isInvoiceRecord(invoice) ? invoice.subtotal : invoice.amountExVat;
-        summary.vat += invoice.vatAmount;
-        summary.total += invoice.totalAmount;
-        return summary;
-      },
-      { exVat: 0, vat: 0, total: 0 }
-    );
+    return {
+      exVat: sumEuros(
+        storedInvoices.map((invoice) =>
+          isInvoiceRecord(invoice) ? invoice.subtotal : invoice.amountExVat
+        )
+      ),
+      vat: sumEuros(storedInvoices.map((invoice) => invoice.vatAmount)),
+      total: sumEuros(storedInvoices.map((invoice) => invoice.totalAmount)),
+    };
   }, [storedInvoices]);
 
   const loadedInvoice = useMemo(() => {
@@ -447,14 +451,66 @@ export default function InvoicesPage() {
     }
   };
 
+  const startEditingInvoice = (invoice: InvoiceRecord) => {
+    loadSavedInvoice(invoice, { shouldScroll: false });
+    // Editing follows the live draft preview, so the changes are visible as they
+    // are typed rather than showing the version still on disk.
+    setLoadedInvoiceId(null);
+    setEditingInvoiceId(invoice.id);
+    setNotice('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEditing = () => {
+    setEditingInvoiceId(null);
+    setLoadedInvoiceId(null);
+    setInvoiceNumber('');
+    setInvoiceDate('');
+    setPeriodLabel('');
+    setHours('');
+    setRate('');
+    setError('');
+    setNotice('');
+  };
+
+  const deleteInvoice = (invoice: StoredInvoice) => {
+    const confirmed = window.confirm(
+      `Delete invoice ${invoice.invoiceNumber} (${formatCurrency(
+        invoice.totalAmount
+      )})? This cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setStoredInvoices(storedInvoices.filter((item) => item.id !== invoice.id));
+      setError('');
+      setNotice(`Deleted invoice ${invoice.invoiceNumber}.`);
+
+      if (loadedInvoiceId === invoice.id) {
+        setLoadedInvoiceId(null);
+      }
+
+      if (editingInvoiceId === invoice.id) {
+        cancelEditing();
+      }
+    } catch (storageError) {
+      setNotice('');
+      setError(describeStorageError(storageError));
+    }
+  };
+
   const printSavedInvoice = (invoice: InvoiceRecord) => {
     loadSavedInvoice(invoice, { shouldScroll: false });
     downloadInvoicePdf(resolveInvoiceForDisplay(invoice, businessProfiles));
     setError('');
   };
 
-  const addInvoice = () => {
+  const saveInvoice = () => {
     setError('');
+    setNotice('');
 
     if (
       !invoiceNumber.trim() ||
@@ -504,8 +560,24 @@ export default function InvoicesPage() {
       return;
     }
 
+    // Invoice numbers must be unique; a duplicate is an administrative problem,
+    // not just a cosmetic one.
+    const duplicate = storedInvoices.find((invoice) => {
+      return (
+        invoice.id !== editingInvoiceId &&
+        invoice.invoiceNumber.trim().toLowerCase() === invoiceNumber.trim().toLowerCase()
+      );
+    });
+
+    if (duplicate) {
+      setError(
+        `Invoice number ${duplicate.invoiceNumber} is already used. Invoice numbers must be unique.`
+      );
+      return;
+    }
+
     const newInvoice: InvoiceRecord = {
-      id: Date.now(),
+      id: editingInvoiceId ?? Date.now(),
       invoiceNumber: invoiceNumber.trim(),
       invoiceDate,
       dueDate,
@@ -522,9 +594,27 @@ export default function InvoicesPage() {
       clientProfile: { ...selectedClientProfile },
     };
 
-    const updatedInvoices = [newInvoice, ...storedInvoices];
-    setStoredInvoices(updatedInvoices);
+    const isUpdate = editingInvoiceId !== null;
+    const updatedInvoices = isUpdate
+      ? storedInvoices.map((invoice) =>
+          invoice.id === editingInvoiceId ? newInvoice : invoice
+        )
+      : [newInvoice, ...storedInvoices];
+
+    try {
+      setStoredInvoices(updatedInvoices);
+    } catch (storageError) {
+      setError(describeStorageError(storageError));
+      return;
+    }
+
+    setEditingInvoiceId(null);
     setLoadedInvoiceId(newInvoice.id);
+    setNotice(
+      isUpdate
+        ? `Updated invoice ${newInvoice.invoiceNumber}.`
+        : `Saved invoice ${newInvoice.invoiceNumber}.`
+    );
 
     setInvoiceNumber('');
     setInvoiceDate('');
@@ -541,6 +631,13 @@ export default function InvoicesPage() {
       >
         ← Back
       </Link>
+
+      {editingInvoiceId !== null && (
+        <div className="no-print rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-4 text-sm text-cyan-100">
+          Editing a saved invoice. Choosing “Update invoice” overwrites it instead of
+          creating a new one.
+        </div>
+      )}
 
       <div className="no-print">
         <h1 className="text-3xl font-semibold">Invoices</h1>
@@ -815,12 +912,29 @@ export default function InvoicesPage() {
               </div>
             )}
 
-            <button
-              onClick={addInvoice}
-              className="mt-5 rounded-2xl bg-cyan-400 px-4 py-3 font-medium text-black hover:opacity-90"
-            >
-              Save invoice
-            </button>
+            {notice && !error && (
+              <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+                {notice}
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                onClick={saveInvoice}
+                className="rounded-2xl bg-cyan-400 px-4 py-3 font-medium text-black hover:opacity-90"
+              >
+                {editingInvoiceId !== null ? 'Update invoice' : 'Save invoice'}
+              </button>
+
+              {editingInvoiceId !== null && (
+                <button
+                  onClick={cancelEditing}
+                  className="rounded-2xl border border-white/10 px-4 py-3 font-medium hover:bg-white/10"
+                >
+                  Cancel edit
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -957,7 +1071,7 @@ export default function InvoicesPage() {
         <div>
           <h2 className="text-2xl font-semibold">Saved invoices</h2>
           <p className="mt-2 text-sm text-white/60">
-            Load a saved invoice into the preview or download a clean one-page PDF from the Print button.
+            Load a saved invoice into the preview, edit or delete it, or download a clean one-page PDF from the Print button.
           </p>
         </div>
 
@@ -1019,6 +1133,18 @@ export default function InvoicesPage() {
                     >
                       Print
                     </button>
+                    <button
+                      onClick={() => startEditingInvoice(invoice)}
+                      className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteInvoice(invoice)}
+                      className="rounded-full border border-red-400/30 px-4 py-2 text-sm text-red-200 hover:bg-red-400/10"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               );
@@ -1047,6 +1173,15 @@ export default function InvoicesPage() {
                   <div>VAT rate: {invoice.vatRate}%</div>
                   <div>VAT: {formatCurrency(invoice.vatAmount)}</div>
                   <div>Total: {formatCurrency(invoice.totalAmount)}</div>
+                </div>
+
+                <div className="mt-4">
+                  <button
+                    onClick={() => deleteInvoice(invoice)}
+                    className="rounded-full border border-red-400/30 px-4 py-2 text-sm text-red-200 hover:bg-red-400/10"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             );

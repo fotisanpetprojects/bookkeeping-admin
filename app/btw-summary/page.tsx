@@ -1,8 +1,16 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocalStorageState } from '@/lib/local-storage';
+import {
+  StoredInvoice,
+  formatCurrency,
+  getInvoiceDate,
+  getInvoiceNetAmount,
+  getQuarter,
+  sumEuros,
+} from '@/lib/billing';
 
 type Expense = {
   id: number;
@@ -21,65 +29,144 @@ type QuarterSummary = {
   key: string;
   year: number;
   quarter: number;
+  revenueExVat: number;
+  outputVat: number;
   expensesExVat: number;
-  deductibleVat: number;
-  totalInclVat: number;
+  inputVat: number;
+  netVat: number;
+  invoiceCount: number;
+  expenseCount: number;
 };
 
-function getQuarter(dateString: string) {
-  const month = new Date(dateString).getMonth() + 1;
-  if (month <= 3) return 1;
-  if (month <= 6) return 2;
-  if (month <= 9) return 3;
-  return 4;
+type Bucket = {
+  year: number;
+  quarter: number;
+  revenue: number[];
+  outputVat: number[];
+  expenses: number[];
+  inputVat: number[];
+  invoiceCount: number;
+  expenseCount: number;
+};
+
+function createBucket(year: number, quarter: number): Bucket {
+  return {
+    year,
+    quarter,
+    revenue: [],
+    outputVat: [],
+    expenses: [],
+    inputVat: [],
+    invoiceCount: 0,
+    expenseCount: 0,
+  };
+}
+
+function isValidDate(dateString: string) {
+  return Boolean(dateString) && !Number.isNaN(new Date(dateString).getTime());
 }
 
 export default function BtwSummaryPage() {
   const [expenses] = useLocalStorageState<Expense[]>('expenses', []);
+  const [invoices] = useLocalStorageState<StoredInvoice[]>('invoices', []);
+  const [selectedQuarter, setSelectedQuarter] = useState('all');
 
-  const summaries = useMemo(() => {
-    const map = new Map<string, QuarterSummary>();
+  const { summaries, undatedInvoices, undatedExpenses } = useMemo(() => {
+    const buckets = new Map<string, Bucket>();
+    let undatedInvoiceCount = 0;
+    let undatedExpenseCount = 0;
 
-    for (const expense of expenses) {
-      const date = new Date(expense.date);
+    const bucketFor = (dateString: string) => {
+      const date = new Date(dateString);
       const year = date.getFullYear();
-      const quarter = getQuarter(expense.date);
+      const quarter = getQuarter(dateString);
       const key = `${year}-Q${quarter}`;
 
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          year,
-          quarter,
-          expensesExVat: 0,
-          deductibleVat: 0,
-          totalInclVat: 0,
-        });
+      if (!buckets.has(key)) {
+        buckets.set(key, createBucket(year, quarter));
       }
 
-      const item = map.get(key)!;
-      item.expensesExVat += Number(expense.amountExVat) || 0;
-      item.deductibleVat += Number(expense.vatAmount) || 0;
-      item.totalInclVat += Number(expense.totalAmount) || 0;
+      return buckets.get(key)!;
+    };
+
+    for (const invoice of invoices) {
+      const dateString = getInvoiceDate(invoice);
+
+      if (!isValidDate(dateString)) {
+        undatedInvoiceCount += 1;
+        continue;
+      }
+
+      const bucket = bucketFor(dateString);
+      bucket.revenue.push(getInvoiceNetAmount(invoice));
+      bucket.outputVat.push(invoice.vatAmount);
+      bucket.invoiceCount += 1;
     }
 
-    return Array.from(map.values()).sort((a, b) => {
-      if (a.year !== b.year) return b.year - a.year;
-      return b.quarter - a.quarter;
-    });
-  }, [expenses]);
+    for (const expense of expenses) {
+      if (!isValidDate(expense.date)) {
+        undatedExpenseCount += 1;
+        continue;
+      }
 
-  const totalDeductibleVat = useMemo(() => {
-    return expenses.reduce((sum, expense) => sum + (Number(expense.vatAmount) || 0), 0);
-  }, [expenses]);
+      const bucket = bucketFor(expense.date);
+      bucket.expenses.push(expense.amountExVat);
+      bucket.inputVat.push(expense.vatAmount);
+      bucket.expenseCount += 1;
+    }
 
-  const totalExpensesExVat = useMemo(() => {
-    return expenses.reduce((sum, expense) => sum + (Number(expense.amountExVat) || 0), 0);
-  }, [expenses]);
+    const result: QuarterSummary[] = Array.from(buckets.entries())
+      .map(([key, bucket]) => {
+        const outputVat = sumEuros(bucket.outputVat);
+        const inputVat = sumEuros(bucket.inputVat);
 
-  const totalExpensesInclVat = useMemo(() => {
-    return expenses.reduce((sum, expense) => sum + (Number(expense.totalAmount) || 0), 0);
-  }, [expenses]);
+        return {
+          key,
+          year: bucket.year,
+          quarter: bucket.quarter,
+          revenueExVat: sumEuros(bucket.revenue),
+          outputVat,
+          expensesExVat: sumEuros(bucket.expenses),
+          inputVat,
+          netVat: sumEuros([outputVat, -inputVat]),
+          invoiceCount: bucket.invoiceCount,
+          expenseCount: bucket.expenseCount,
+        };
+      })
+      .sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.quarter - a.quarter;
+      });
+
+    return {
+      summaries: result,
+      undatedInvoices: undatedInvoiceCount,
+      undatedExpenses: undatedExpenseCount,
+    };
+  }, [expenses, invoices]);
+
+  const visibleSummaries = useMemo(() => {
+    if (selectedQuarter === 'all') {
+      return summaries;
+    }
+
+    return summaries.filter((summary) => summary.key === selectedQuarter);
+  }, [selectedQuarter, summaries]);
+
+  const totals = useMemo(() => {
+    const outputVat = sumEuros(visibleSummaries.map((summary) => summary.outputVat));
+    const inputVat = sumEuros(visibleSummaries.map((summary) => summary.inputVat));
+
+    return {
+      revenueExVat: sumEuros(visibleSummaries.map((summary) => summary.revenueExVat)),
+      outputVat,
+      expensesExVat: sumEuros(visibleSummaries.map((summary) => summary.expensesExVat)),
+      inputVat,
+      netVat: sumEuros([outputVat, -inputVat]),
+    };
+  }, [visibleSummaries]);
+
+  const netLabel = totals.netVat >= 0 ? 'BTW to pay' : 'BTW to reclaim';
 
   return (
     <main className="space-y-6">
@@ -90,77 +177,156 @@ export default function BtwSummaryPage() {
         ← Back
       </Link>
 
-      <div>
-        <h1 className="text-3xl font-semibold">BTW Summary</h1>
-        <p className="mt-2 text-sm text-white/60">
-          Quarterly overview of expense totals and deductible VAT.
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold">BTW Summary</h1>
+          <p className="mt-2 text-sm text-white/60">
+            VAT charged on invoices minus deductible VAT on expenses, per quarter.
+          </p>
+        </div>
+
+        <label className="text-sm text-white/60">
+          <span className="mb-2 block">Quarter</span>
+          <select
+            className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+            value={selectedQuarter}
+            onChange={(event) => setSelectedQuarter(event.target.value)}
+          >
+            <option value="all" className="text-black">
+              All quarters
+            </option>
+            {summaries.map((summary) => (
+              <option key={summary.key} value={summary.key} className="text-black">
+                {summary.year} Q{summary.quarter}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-6">
+        <div className="text-sm uppercase tracking-[0.14em] text-cyan-200">{netLabel}</div>
+        <div className="mt-2 text-4xl font-semibold">
+          {formatCurrency(Math.abs(totals.netVat))}
+        </div>
+        <div className="mt-3 text-sm text-white/70">
+          {formatCurrency(totals.outputVat)} charged on invoices −{' '}
+          {formatCurrency(totals.inputVat)} deductible on expenses
+          {selectedQuarter === 'all' ? ' (all quarters combined)' : ''}
+        </div>
+      </div>
+
+      {selectedQuarter === 'all' && summaries.length > 1 && (
+        <div className="rounded-3xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+          You file BTW per quarter. Pick a single quarter above to get the figure for one
+          return.
+        </div>
+      )}
+
+      {(undatedInvoices > 0 || undatedExpenses > 0) && (
+        <div className="rounded-3xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-100">
+          Excluded from these totals because of a missing or invalid date:{' '}
+          {undatedInvoices > 0 && `${undatedInvoices} invoice(s)`}
+          {undatedInvoices > 0 && undatedExpenses > 0 && ', '}
+          {undatedExpenses > 0 && `${undatedExpenses} expense(s)`}. Fix the dates so they
+          are counted.
+        </div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-4">
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm text-white/50">Total deductible VAT</div>
-          <div className="mt-2 text-3xl font-semibold">
-            €{totalDeductibleVat.toFixed(2)}
+          <div className="text-sm text-white/50">Revenue ex VAT</div>
+          <div className="mt-2 text-2xl font-semibold">
+            {formatCurrency(totals.revenueExVat)}
           </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+          <div className="text-sm text-white/50">VAT charged (output)</div>
+          <div className="mt-2 text-2xl font-semibold">{formatCurrency(totals.outputVat)}</div>
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
           <div className="text-sm text-white/50">Expenses ex VAT</div>
-          <div className="mt-2 text-3xl font-semibold">
-            €{totalExpensesExVat.toFixed(2)}
+          <div className="mt-2 text-2xl font-semibold">
+            {formatCurrency(totals.expensesExVat)}
           </div>
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm text-white/50">Expenses incl VAT</div>
-          <div className="mt-2 text-3xl font-semibold">
-            €{totalExpensesInclVat.toFixed(2)}
-          </div>
+          <div className="text-sm text-white/50">VAT deductible (input)</div>
+          <div className="mt-2 text-2xl font-semibold">{formatCurrency(totals.inputVat)}</div>
         </div>
       </div>
 
       <div className="space-y-4">
-        {summaries.length === 0 ? (
+        {visibleSummaries.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">
-            No expenses yet.
+            No invoices or expenses yet.
           </div>
         ) : (
-          summaries.map((summary) => (
+          visibleSummaries.map((summary) => (
             <div
               key={summary.key}
               className="rounded-3xl border border-white/10 bg-white/5 p-6"
             >
-              <h2 className="mb-4 text-xl font-semibold">
-                {summary.year} Q{summary.quarter}
-              </h2>
+              <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-xl font-semibold">
+                  {summary.year} Q{summary.quarter}
+                </h2>
+                <div className="text-sm text-white/50">
+                  {summary.invoiceCount} invoice(s) · {summary.expenseCount} expense(s)
+                </div>
+              </div>
 
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-4">
+                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                  <div className="text-sm text-white/50">Revenue ex VAT</div>
+                  <div className="mt-2 text-xl font-semibold">
+                    {formatCurrency(summary.revenueExVat)}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                  <div className="text-sm text-white/50">VAT charged</div>
+                  <div className="mt-2 text-xl font-semibold">
+                    {formatCurrency(summary.outputVat)}
+                  </div>
+                </div>
+
                 <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
                   <div className="text-sm text-white/50">Expenses ex VAT</div>
                   <div className="mt-2 text-xl font-semibold">
-                    €{summary.expensesExVat.toFixed(2)}
+                    {formatCurrency(summary.expensesExVat)}
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                  <div className="text-sm text-white/50">Deductible VAT</div>
+                  <div className="text-sm text-white/50">VAT deductible</div>
                   <div className="mt-2 text-xl font-semibold">
-                    €{summary.deductibleVat.toFixed(2)}
+                    {formatCurrency(summary.inputVat)}
                   </div>
                 </div>
+              </div>
 
-                <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                  <div className="text-sm text-white/50">Total incl VAT</div>
-                  <div className="mt-2 text-xl font-semibold">
-                    €{summary.totalInclVat.toFixed(2)}
-                  </div>
+              <div className="mt-3 rounded-2xl border border-white/10 bg-black/25 p-4">
+                <div className="text-sm text-white/50">
+                  {summary.netVat >= 0 ? 'BTW to pay' : 'BTW to reclaim'}
+                </div>
+                <div className="mt-2 text-2xl font-semibold">
+                  {formatCurrency(Math.abs(summary.netVat))}
                 </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      <p className="text-xs text-white/40">
+        Figures are based on invoice and expense dates as entered. Reverse-charge, KOR and
+        intra-EU supplies are not modelled — check those cases against your own situation
+        before filing.
+      </p>
     </main>
   );
 }

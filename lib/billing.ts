@@ -174,3 +174,44 @@ export function isClientProfileComplete(profile: ClientProfile) {
 export function isInvoiceRecord(invoice: StoredInvoice): invoice is InvoiceRecord {
   return 'invoiceDate' in invoice && 'fromProfile' in invoice && 'clientProfile' in invoice;
 }
+
+/** Round a euro amount to whole cents, avoiding float dust in stored totals. */
+export function roundCents(value: number) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+/**
+ * Sum euro amounts in integer cents. Adding floats directly lets rounding error
+ * accumulate across many rows, which matters on figures that go onto a filing.
+ */
+export function sumEuros(values: number[]) {
+  const cents = values.reduce((total, value) => {
+    return total + Math.round((Number(value) || 0) * 100);
+  }, 0);
+
+  return cents / 100;
+}
+
+/** Calendar quarter (1-4) for an ISO date string. */
+export function getQuarter(dateString: string) {
+  const month = new Date(dateString).getMonth() + 1;
+  if (month <= 3) return 1;
+  if (month <= 6) return 2;
+  if (month <= 9) return 3;
+  return 4;
+}
+
+/** The date an invoice was issued, across both the current and legacy shapes. */
+export function getInvoiceDate(invoice: StoredInvoice) {
+  return isInvoiceRecord(invoice) ? invoice.invoiceDate : invoice.issueDate;
+}
+
+/** The net (ex VAT) amount of an invoice, across both the current and legacy shapes. */
+export function getInvoiceNetAmount(invoice: StoredInvoice) {
+  return isInvoiceRecord(invoice) ? invoice.subtotal : invoice.amountExVat;
+}
+
+/** The client label for an invoice, across both the current and legacy shapes. */
+export function getInvoiceClientName(invoice: StoredInvoice) {
+  return isInvoiceRecord(invoice) ? invoice.clientProfile.companyName : invoice.client;
+}

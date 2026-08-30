@@ -28,8 +28,27 @@ That tradeoff keeps the product lightweight, inexpensive to run, and well scoped
 - `Profiles`: save reusable sender and client billing details
 - `Invoices`: create invoices from saved profiles and calculate VAT automatically
 - `Expenses`: track costs, VAT, and receipt files locally
-- `BTW Summary`: review deductible VAT and expense totals by quarter
+- `BTW Summary`: net BTW per quarter (VAT charged on invoices minus deductible VAT on expenses)
 - `Local persistence`: store everything in browser `localStorage`
+- `Backup & restore`: export all bookkeeping data to a JSON file and merge or replace it back
+
+## Data Safety
+
+All data lives in this browser's `localStorage` and nowhere else. That keeps the app
+private and backend-free, but it also means clearing site data, switching browsers or
+using a different browser profile will lose everything.
+
+- Export a backup from the dashboard regularly; it downloads a single JSON file.
+- Restoring offers **Merge**, which only adds entries that are not already present and
+  never overwrites or removes what is already there, and **Replace**, which downloads a
+  safety backup of the current data before overwriting it.
+- A restore is applied under a rollback guard: if any write fails, every key is put back
+  as it was, so a failed restore cannot leave the books half-updated.
+- Receipts are stored inline as base64, and the whole origin is limited to roughly 5MB,
+  so single receipt files are capped at 1MB.
+
+BTW figures do not model reverse-charge (`BTW verlegd`), the small business scheme
+(`KOR`) or intra-EU supplies. Check those cases against your own situation before filing.
 
 ## Screenshots
 
@@ -51,6 +70,8 @@ The expenses page shows the local-first receipt logging flow, VAT selection, and
 .
 ├── app/
 │   ├── btw-summary/page.tsx    Quarterly VAT summary page
+│   ├── components/
+│   │   └── BackupPanel.tsx     Export / restore bookkeeping data
 │   ├── clients/page.tsx        Billing profile management
 │   ├── expenses/page.tsx       Expense and receipt tracking
 │   ├── invoices/page.tsx       Invoice builder and VAT calculation
@@ -58,6 +79,7 @@ The expenses page shows the local-first receipt logging flow, VAT selection, and
 │   ├── page.tsx                Dashboard / landing page
 │   └── globals.css             Global styles
 ├── lib/
+│   ├── backup.ts               Backup export, validation and restore
 │   ├── billing.ts              Shared billing types and helpers
 │   └── local-storage.ts        Local storage state hook
 ├── public/                     Static assets

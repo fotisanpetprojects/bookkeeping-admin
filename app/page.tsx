@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackupPanel from '@/app/components/BackupPanel';
 
 export default function Home() {
   return (
@@ -59,10 +60,12 @@ export default function Home() {
           <div className="mb-2 text-sm text-white/50">04</div>
           <h2 className="text-xl font-semibold">BTW Summary</h2>
           <p className="mt-2 text-sm text-white/70">
-            Review deductible VAT by quarter.
+            Net BTW per quarter: VAT charged minus VAT deductible.
           </p>
         </Link>
       </section>
+
+      <BackupPanel />
     </div>
   );
 }
