@@ -143,7 +143,7 @@ export function Donut({ slices, centerLabel, centerValue }: {
 
 /* ------------------------------------------------------------ bar chart --- */
 
-export type QuarterBar = { label: string; value: number; sub?: string };
+export type QuarterBar = { label: string; value: number; sub?: string; sub2?: string };
 
 export function QuarterBars({ bars }: { bars: QuarterBar[] }) {
   const [tip, setTip] = useState<Tip>(null);
@@ -209,13 +209,24 @@ export function QuarterBars({ bars }: { bars: QuarterBar[] }) {
               </text>
               <text
                 x={x + barW / 2}
-                y={height - 4}
+                y={bar.sub2 ? height - 16 : height - 4}
                 textAnchor="middle"
                 className="fill-white/50"
                 style={{ fontSize: 11 }}
               >
                 {bar.label}
               </text>
+              {bar.sub2 && (
+                <text
+                  x={x + barW / 2}
+                  y={height - 4}
+                  textAnchor="middle"
+                  className="fill-white/35"
+                  style={{ fontSize: 9 }}
+                >
+                  {bar.sub2}
+                </text>
+              )}
             </g>
           );
         })}

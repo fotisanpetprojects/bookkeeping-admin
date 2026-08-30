@@ -1,40 +1,70 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LANGUAGES, StringKey, useLanguage, useT } from '@/lib/i18n';
 
-const TABS = [
-  { href: '/', label: 'Dashboard' },
-  { href: '/invoices', label: 'Invoices' },
-  { href: '/clients', label: 'Profiles' },
-  { href: '/expenses', label: 'Expenses' },
-  { href: '/btw-summary', label: 'BTW Summary' },
-  { href: '/belastingdienst', label: 'Belastingdienst' },
+const TABS: { href: string; key: StringKey }[] = [
+  { href: '/', key: 'nav.dashboard' },
+  { href: '/invoices', key: 'nav.invoices' },
+  { href: '/clients', key: 'nav.profiles' },
+  { href: '/expenses', key: 'nav.expenses' },
+  { href: '/btw-summary', key: 'nav.vatSummary' },
+  { href: '/belastingdienst', key: 'nav.belastingdienst' },
 ];
 
 export default function NavTabs() {
   const pathname = usePathname();
+  const [language, setLanguage] = useLanguage();
+  const { t } = useT();
+
+  // The document language is set on the client: rendering it on the server would
+  // depend on a stored preference the server cannot know, which is a hydration
+  // mismatch by construction.
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   return (
-    <nav className="flex flex-wrap gap-3 text-sm">
-      {TABS.map((tab) => {
-        const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
+    <div className="flex flex-wrap items-center gap-3">
+      <nav className="flex flex-wrap gap-3 text-sm">
+        {TABS.map((tab) => {
+          const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
 
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            aria-current={isActive ? 'page' : undefined}
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              aria-current={isActive ? 'page' : undefined}
+              className={
+                isActive
+                  ? 'rounded-full border border-cyan-400/60 bg-cyan-400/15 px-4 py-2 font-medium text-cyan-100'
+                  : 'rounded-full border border-white/10 px-4 py-2 text-white/80 hover:bg-white/10'
+              }
+            >
+              {t(tab.key)}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="flex overflow-hidden rounded-full border border-white/10">
+        {LANGUAGES.map((option) => (
+          <button
+            key={option.code}
+            onClick={() => setLanguage(option.code)}
+            aria-pressed={language === option.code}
             className={
-              isActive
-                ? 'rounded-full border border-cyan-400/60 bg-cyan-400/15 px-4 py-2 font-medium text-cyan-100'
-                : 'rounded-full border border-white/10 px-4 py-2 text-white/80 hover:bg-white/10'
+              language === option.code
+                ? 'bg-cyan-400/20 px-3 py-2 text-xs font-medium text-cyan-100'
+                : 'px-3 py-2 text-xs text-white/60 hover:bg-white/10'
             }
           >
-            {tab.label}
-          </Link>
-        );
-      })}
-    </nav>
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

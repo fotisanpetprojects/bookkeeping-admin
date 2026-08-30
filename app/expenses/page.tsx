@@ -3,6 +3,7 @@
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
+import { useT } from '@/lib/i18n';
 import {
   formatCurrency,
   getBackfillMinDateString,
@@ -63,6 +64,7 @@ export default function ExpensesPage() {
   const [receiptDataUrl, setReceiptDataUrl] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [yearFilter, setYearFilter] = useState('all');
+  const { t } = useT();
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -297,7 +299,7 @@ export default function ExpensesPage() {
 
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold">Expenses</h1>
+          <h1 className="text-3xl font-semibold">{t('exp.title')}</h1>
           <p className="mt-2 text-sm text-white/60">
             Allowed date range: {minDate} to {today}
           </p>
@@ -305,14 +307,14 @@ export default function ExpensesPage() {
 
         {years.length > 0 && (
           <label className="text-sm text-white/60">
-            <span className="mb-2 block">Year</span>
+            <span className="mb-2 block">{t('common.year')}</span>
             <select
               className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
               value={yearFilter}
               onChange={(event) => setYearFilter(event.target.value)}
             >
               <option value="all" className="text-black">
-                All years
+                {t('common.allYears')}
               </option>
               {years.map((year) => (
                 <option key={year} value={String(year)} className="text-black">
@@ -327,15 +329,15 @@ export default function ExpensesPage() {
       {expenses.length > 0 && (
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm text-white/50">Ex VAT</div>
+            <div className="text-sm text-white/50">{t('exp.exVat')}</div>
             <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.exVat)}</div>
           </div>
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm text-white/50">Deductible VAT</div>
+            <div className="text-sm text-white/50">{t('exp.deductibleVat')}</div>
             <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.vat)}</div>
           </div>
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm text-white/50">Incl VAT</div>
+            <div className="text-sm text-white/50">{t('exp.inclVat')}</div>
             <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.total)}</div>
           </div>
         </div>

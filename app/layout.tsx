@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-[#0b1020] text-white">
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,#1b2a52_0%,#0b1020_45%,#070b16_100%)]">
           <SeedLoader />
