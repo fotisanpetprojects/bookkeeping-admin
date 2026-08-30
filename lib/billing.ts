@@ -43,6 +43,8 @@ export type InvoiceRecord = {
   paymentTermsDays: number;
   fromProfile: BusinessProfile;
   clientProfile: ClientProfile;
+  /** ISO date the invoice was paid. Absent or empty means still outstanding. */
+  paidDate?: string;
 };
 
 export type LegacyInvoice = {
@@ -56,6 +58,8 @@ export type LegacyInvoice = {
   vatRate: number;
   vatAmount: number;
   totalAmount: number;
+  /** ISO date the invoice was paid. Absent or empty means still outstanding. */
+  paidDate?: string;
 };
 
 export type StoredInvoice = InvoiceRecord | LegacyInvoice;
@@ -214,4 +218,34 @@ export function getInvoiceNetAmount(invoice: StoredInvoice) {
 /** The client label for an invoice, across both the current and legacy shapes. */
 export function getInvoiceClientName(invoice: StoredInvoice) {
   return isInvoiceRecord(invoice) ? invoice.clientProfile.companyName : invoice.client;
+}
+
+/** An invoice counts as paid once it carries a payment date. */
+export function isInvoicePaid(invoice: StoredInvoice) {
+  return Boolean(invoice.paidDate);
+}
+
+/**
+ * Outstanding invoices past their due date. Invoices with no due date are never
+ * treated as overdue, since we cannot know.
+ */
+export function isInvoiceOverdue(invoice: StoredInvoice, today = getTodayString()) {
+  return !isInvoicePaid(invoice) && Boolean(invoice.dueDate) && invoice.dueDate < today;
+}
+
+/** Calendar year of an invoice, or NaN when the date is unusable. */
+export function getInvoiceYear(invoice: StoredInvoice) {
+  const date = new Date(getInvoiceDate(invoice));
+  return date.getFullYear();
+}
+
+const euroWholeFormatter = new Intl.NumberFormat('nl-NL', {
+  style: 'currency',
+  currency: 'EUR',
+  maximumFractionDigits: 0,
+});
+
+/** Euro without cents, for tight spaces like a donut centre or axis tick. */
+export function formatEuroWhole(value: number) {
+  return euroWholeFormatter.format(value);
 }

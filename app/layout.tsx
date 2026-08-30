@@ -38,6 +38,9 @@ export default function RootLayout({
                 <Link href="/btw-summary" className="rounded-full border border-white/10 px-4 py-2 hover:bg-white/10">
                   BTW Summary
                 </Link>
+                <Link href="/belastingdienst" className="rounded-full border border-white/10 px-4 py-2 hover:bg-white/10">
+                  Belastingdienst
+                </Link>
               </nav>
             </div>
           </header>

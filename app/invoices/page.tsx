@@ -18,12 +18,39 @@ import {
   formatDate,
   getMaxFutureDateString,
   getMinDateString,
+  getTodayString,
   isBusinessProfileComplete,
+  isInvoicePaid,
+  isInvoiceOverdue,
   isInvoiceRecord,
   roundCents,
   sumEuros,
   toBusinessProfile,
 } from '@/lib/billing';
+
+function InvoiceStatusBadge({ invoice }: { invoice: StoredInvoice }) {
+  if (isInvoicePaid(invoice)) {
+    return (
+      <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">
+        Paid {invoice.paidDate ? formatDate(invoice.paidDate) : ''}
+      </span>
+    );
+  }
+
+  if (isInvoiceOverdue(invoice)) {
+    return (
+      <span className="rounded-full border border-red-400/30 bg-red-400/10 px-3 py-1 text-xs text-red-200">
+        Overdue
+      </span>
+    );
+  }
+
+  return (
+    <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white/70">
+      Outstanding
+    </span>
+  );
+}
 
 type InvoicePreviewData = Omit<InvoiceRecord, 'id' | 'clientProfile'> & {
   clientProfile: ClientProfile | null;
@@ -496,6 +523,27 @@ export default function InvoicesPage() {
       if (editingInvoiceId === invoice.id) {
         cancelEditing();
       }
+    } catch (storageError) {
+      setNotice('');
+      setError(describeStorageError(storageError));
+    }
+  };
+
+  const togglePaid = (invoice: StoredInvoice) => {
+    const nextPaidDate = isInvoicePaid(invoice) ? undefined : getTodayString();
+
+    try {
+      setStoredInvoices(
+        storedInvoices.map((item) =>
+          item.id === invoice.id ? { ...item, paidDate: nextPaidDate } : item
+        )
+      );
+      setError('');
+      setNotice(
+        nextPaidDate
+          ? `Marked invoice ${invoice.invoiceNumber} paid on ${formatDate(nextPaidDate)}.`
+          : `Marked invoice ${invoice.invoiceNumber} unpaid.`
+      );
     } catch (storageError) {
       setNotice('');
       setError(describeStorageError(storageError));
@@ -1089,7 +1137,10 @@ export default function InvoicesPage() {
                 >
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
-                      <div className="text-lg font-semibold">{invoice.invoiceNumber}</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-lg font-semibold">{invoice.invoiceNumber}</span>
+                        <InvoiceStatusBadge invoice={invoice} />
+                      </div>
                       <div className="mt-1 text-sm text-white/60">
                         {invoice.clientProfile.companyName} · {invoice.periodLabel}
                       </div>
@@ -1134,6 +1185,12 @@ export default function InvoicesPage() {
                       Print
                     </button>
                     <button
+                      onClick={() => togglePaid(invoice)}
+                      className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                    >
+                      {isInvoicePaid(invoice) ? 'Mark unpaid' : 'Mark paid'}
+                    </button>
+                    <button
                       onClick={() => startEditingInvoice(invoice)}
                       className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
                     >
@@ -1157,7 +1214,10 @@ export default function InvoicesPage() {
               >
                 <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <div className="text-lg font-semibold">{invoice.invoiceNumber}</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-lg font-semibold">{invoice.invoiceNumber}</span>
+                      <InvoiceStatusBadge invoice={invoice} />
+                    </div>
                     <div className="text-sm text-white/60">{invoice.client}</div>
                   </div>
 
@@ -1175,7 +1235,13 @@ export default function InvoicesPage() {
                   <div>Total: {formatCurrency(invoice.totalAmount)}</div>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => togglePaid(invoice)}
+                    className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                  >
+                    {isInvoicePaid(invoice) ? 'Mark unpaid' : 'Mark paid'}
+                  </button>
                   <button
                     onClick={() => deleteInvoice(invoice)}
                     className="rounded-full border border-red-400/30 px-4 py-2 text-sm text-red-200 hover:bg-red-400/10"
