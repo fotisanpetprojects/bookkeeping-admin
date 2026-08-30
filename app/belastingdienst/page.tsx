@@ -133,7 +133,17 @@ export default function BelastingdienstPage() {
       monthlyExpenses[new Date(expense.date).getMonth()] += expense.amountExVat;
     }
 
-    const lastMonthWithData = year === currentYear ? new Date().getMonth() : 11;
+    let lastMonthWithData = year === currentYear ? new Date().getMonth() : 11;
+
+    // An invoice or expense dated later in the year is real data, not a projection,
+    // so the actuals must run at least as far as the last month that has any.
+    for (let month = 11; month > lastMonthWithData; month -= 1) {
+      if (monthlyRevenue[month] > 0 || monthlyExpenses[month] > 0) {
+        lastMonthWithData = month;
+        break;
+      }
+    }
+
     const monthsElapsed = lastMonthWithData + 1;
     const avgRevenue = monthsElapsed > 0 ? revenueExVat / monthsElapsed : 0;
     const avgExpenses = monthsElapsed > 0 ? expensesExVat / monthsElapsed : 0;
@@ -281,15 +291,24 @@ export default function BelastingdienstPage() {
             shown here — it is collected for the Belastingdienst, so it was never your
             revenue. It has its own figure above.
           </p>
-          <Donut
-            centerLabel="Revenue ex VAT"
-            centerValue={formatEuroWhole(data.revenueExVat)}
-            slices={[
-              { label: 'Take-home (est.)', value: takeHome, color: SERIES.blue },
-              { label: 'Income tax (est.)', value: data.taxToDate.totalTax, color: SERIES.orange },
-              { label: 'Business expenses', value: data.expensesExVat, color: SERIES.aqua },
-            ]}
-          />
+          {data.taxToDate.profit < 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-sm text-white/70">
+              Expenses of {formatCurrency(data.expensesExVat)} exceed revenue of{' '}
+              {formatCurrency(data.revenueExVat)}, so {year} is a loss of{' '}
+              {formatCurrency(Math.abs(data.taxToDate.profit))}. There is nothing to split
+              up, and no income tax is estimated on a loss.
+            </div>
+          ) : (
+            <Donut
+              centerLabel="Revenue ex VAT"
+              centerValue={formatEuroWhole(data.revenueExVat)}
+              slices={[
+                { label: 'Take-home (est.)', value: takeHome, color: SERIES.blue },
+                { label: 'Income tax (est.)', value: data.taxToDate.totalTax, color: SERIES.orange },
+                { label: 'Business expenses', value: data.expensesExVat, color: SERIES.aqua },
+              ]}
+            />
+          )}
         </section>
 
         <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
