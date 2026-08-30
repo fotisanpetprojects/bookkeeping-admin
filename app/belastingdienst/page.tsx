@@ -163,7 +163,6 @@ export default function BelastingdienstPage() {
 
     const monthsElapsed = lastMonthWithData + 1;
     const avgRevenue = monthsElapsed > 0 ? revenueExVat / monthsElapsed : 0;
-    const avgExpenses = monthsElapsed > 0 ? expensesExVat / monthsElapsed : 0;
 
     const cumulative = (monthly: number[], average: number) => {
       const out: number[] = [];
@@ -178,12 +177,19 @@ export default function BelastingdienstPage() {
     };
 
     const cumulativeRevenue = cumulative(monthlyRevenue, avgRevenue);
-    const cumulativeExpenses = cumulative(monthlyExpenses, avgExpenses);
+    // Expenses are not extrapolated: costs here are one-off purchases, not a
+    // monthly run rate, so projecting an average would invent spending.
+    const cumulativeExpenses = cumulative(monthlyExpenses, 0);
 
     // Tax accrued month by month, so the chart shows the bill growing rather than
     // only its end state. Same euro scale as the other two series.
     const cumulativeTax = cumulativeRevenue.map((revenue, month) =>
       estimateIncomeTax(revenue, cumulativeExpenses[month], settings).totalTax
+    );
+
+    // What is actually kept: revenue less costs less the estimated tax on it.
+    const cumulativeNetProfit = cumulativeRevenue.map((revenue, month) =>
+      Math.round((revenue - cumulativeExpenses[month] - cumulativeTax[month]) * 100) / 100
     );
 
     const taxToDate = estimateIncomeTax(revenueExVat, expensesExVat, settings);
@@ -213,6 +219,7 @@ export default function BelastingdienstPage() {
       cumulativeRevenue,
       cumulativeExpenses,
       cumulativeTax,
+      cumulativeNetProfit,
       lastMonthWithData,
       taxToDate,
       taxProjected,
@@ -268,6 +275,7 @@ export default function BelastingdienstPage() {
         cumulativeRevenueExVat: data.cumulativeRevenue[index],
         cumulativeExpensesExVat: data.cumulativeExpenses[index],
         cumulativeIncomeTaxEstimate: data.cumulativeTax[index],
+        cumulativeNetProfit: data.cumulativeNetProfit[index],
       })),
       incomeTax: {
         onProfitSoFar: data.taxToDate,
@@ -422,13 +430,13 @@ export default function BelastingdienstPage() {
             actualThrough={data.lastMonthWithData}
             series={[
               { label: t('common.exVat'), color: SERIES.blue, values: data.cumulativeRevenue },
+              { label: t('bd.netProfit'), color: SERIES.aqua, values: data.cumulativeNetProfit },
               { label: t('bd.incomeTaxEst'), color: SERIES.orange, values: data.cumulativeTax },
-              { label: t('vat.expensesExVat'), color: SERIES.aqua, values: data.cumulativeExpenses },
             ]}
           />
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
             <div className="text-xs uppercase tracking-[0.14em] text-white/45">{t('bd.projectedRevenue')}</div>
             <div className="mt-2 text-xl font-semibold">{formatCurrency(data.cumulativeRevenue[11])}</div>
@@ -441,6 +449,10 @@ export default function BelastingdienstPage() {
             <div className="text-xs uppercase tracking-[0.14em] text-white/45">{t('bd.projectedTax')}</div>
             <div className="mt-2 text-xl font-semibold">{formatCurrency(data.taxProjected.totalTax)}</div>
           </div>
+          <div className="rounded-2xl border border-cyan-400/25 bg-cyan-400/10 p-4">
+            <div className="text-xs uppercase tracking-[0.14em] text-cyan-200">{t('bd.projectedNetProfit')}</div>
+            <div className="mt-2 text-xl font-semibold">{formatCurrency(data.cumulativeNetProfit[11])}</div>
+          </div>
         </div>
 
         {showTable && (
@@ -451,6 +463,7 @@ export default function BelastingdienstPage() {
                   <th className="py-2">Month</th>
                   <th className="py-2 text-right">Cumulative revenue</th>
                   <th className="py-2 text-right">Cumulative expenses</th>
+                  <th className="py-2 text-right">Net profit</th>
                   <th className="py-2 text-right">Source</th>
                 </tr>
               </thead>
@@ -460,6 +473,7 @@ export default function BelastingdienstPage() {
                     <td className="py-2">{month}</td>
                     <td className="py-2 text-right">{formatCurrency(data.cumulativeRevenue[index])}</td>
                     <td className="py-2 text-right">{formatCurrency(data.cumulativeExpenses[index])}</td>
+                    <td className="py-2 text-right">{formatCurrency(data.cumulativeNetProfit[index])}</td>
                     <td className="py-2 text-right text-white/50">
                       {index <= data.lastMonthWithData ? 'Actual' : 'Projected'}
                     </td>

@@ -59,7 +59,7 @@ export default function BtwSummaryPage() {
   const [invoices] = useLocalStorageState<StoredInvoice[]>('invoices', []);
   // Quarters already declared and paid to the Belastingdienst, keyed "2026-Q1".
   const [settledQuarters, setSettledQuarters] = useLocalStorageState<string[]>('btw-settled', []);
-  const [selectedQuarter, setSelectedQuarter] = useState('all');
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [error, setError] = useState('');
   const { t, language } = useT();
 
@@ -131,10 +131,15 @@ export default function BtwSummaryPage() {
     return { summaries: result, undatedInvoices: undatedInvoiceCount, undatedExpenses: undatedExpenseCount };
   }, [expenses, invoices]);
 
+  const years = useMemo(() => {
+    return Array.from(new Set(summaries.map((summary) => summary.year))).sort((a, b) => b - a);
+  }, [summaries]);
+
+  const activeYear = selectedYear ?? years[0] ?? new Date().getFullYear();
+
   const visibleSummaries = useMemo(() => {
-    if (selectedQuarter === 'all') return summaries;
-    return summaries.filter((summary) => summary.key === selectedQuarter);
-  }, [selectedQuarter, summaries]);
+    return summaries.filter((summary) => summary.year === activeYear);
+  }, [activeYear, summaries]);
 
   const totals = useMemo(() => {
     const outputVat = sumEuros(visibleSummaries.map((s) => s.outputVat));
@@ -157,7 +162,12 @@ export default function BtwSummaryPage() {
     );
   }, [settledQuarters, visibleSummaries]);
 
-  const netLabel = totals.netVat >= 0 ? t('vat.netToPay') : t('vat.netToReclaim');
+  const unsettledQuarters = useMemo(() => {
+    return visibleSummaries
+      .filter((summary) => !settledQuarters.includes(summary.key) && summary.netVat !== 0)
+      .map((summary) => `Q${summary.quarter}`)
+      .reverse();
+  }, [settledQuarters, visibleSummaries]);
 
   return (
     <main className="space-y-6">
@@ -172,35 +182,34 @@ export default function BtwSummaryPage() {
         </div>
 
         <label className="text-sm text-white/60">
-          <span className="mb-2 block">{t('common.quarter')}</span>
+          <span className="mb-2 block">{t('common.year')}</span>
           <select
             className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
-            value={selectedQuarter}
-            onChange={(event) => setSelectedQuarter(event.target.value)}
+            value={activeYear}
+            onChange={(event) => setSelectedYear(Number(event.target.value))}
           >
-            <option value="all" className="text-black">{t('common.allQuarters')}</option>
-            {summaries.map((summary) => (
-              <option key={summary.key} value={summary.key} className="text-black">
-                {summary.year} Q{summary.quarter} · {quarterMonths(summary.quarter, language)}
+            {years.map((year) => (
+              <option key={year} value={year} className="text-black">
+                {year}
               </option>
             ))}
           </select>
         </label>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-6">
-          <div className="text-sm uppercase tracking-[0.14em] text-cyan-200">{netLabel}</div>
-          <div className="mt-2 text-4xl font-semibold">{formatCurrency(Math.abs(totals.netVat))}</div>
-          <div className="mt-3 text-sm text-white/70">
-            {formatCurrency(totals.outputVat)} {t('vat.chargedShort')} − {formatCurrency(totals.inputVat)} {t('vat.deductibleShort')}
-          </div>
+      <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-6">
+        <div className="text-sm uppercase tracking-[0.14em] text-cyan-200">{t('vat.stillToPay')}</div>
+        <div className="mt-2 text-4xl font-semibold">{formatCurrency(Math.abs(outstandingVat))}</div>
+        <div className="mt-3 text-sm text-white/70">
+          {unsettledQuarters.length === 0
+            ? t('vat.allSettled')
+            : `${t('vat.stillToPayHint')} ${unsettledQuarters.join(', ')}`}
         </div>
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm uppercase tracking-[0.14em] text-white/45">{t('vat.stillToPay')}</div>
-          <div className="mt-2 text-4xl font-semibold">{formatCurrency(Math.abs(outstandingVat))}</div>
-          <div className="mt-3 text-sm text-white/60">{t('vat.stillToPayHint')}</div>
+        <div className="mt-2 text-xs text-white/45">
+          {t('vat.grossHint', {
+            gross: formatCurrency(Math.abs(totals.netVat)),
+            year: String(activeYear),
+          })}
         </div>
       </div>
 
@@ -216,25 +225,6 @@ export default function BtwSummaryPage() {
       {error && (
         <div className="rounded-3xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-200">{error}</div>
       )}
-
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm text-white/50">{t('common.exVat')}</div>
-          <div className="mt-2 text-2xl font-semibold">{formatCurrency(totals.revenueExVat)}</div>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm text-white/50">{t('vat.charged')}</div>
-          <div className="mt-2 text-2xl font-semibold">{formatCurrency(totals.outputVat)}</div>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm text-white/50">{t('vat.expensesExVat')}</div>
-          <div className="mt-2 text-2xl font-semibold">{formatCurrency(totals.expensesExVat)}</div>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm text-white/50">{t('vat.deductible')}</div>
-          <div className="mt-2 text-2xl font-semibold">{formatCurrency(totals.inputVat)}</div>
-        </div>
-      </div>
 
       <div className="space-y-4">
         {visibleSummaries.length === 0 ? (

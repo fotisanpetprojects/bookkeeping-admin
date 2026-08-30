@@ -54,9 +54,14 @@ export const STRINGS = {
   'vat.deductibleShort': { en: 'VAT deductible', nl: 'Aftrekbare BTW' },
   'vat.expensesExVat': { en: 'Expenses ex VAT', nl: 'Uitgaven excl. BTW' },
   'vat.stillToPay': { en: 'Still to pay', nl: 'Nog te betalen' },
-  'vat.stillToPayHint': {
-    en: 'Quarters not yet marked as filed and paid.',
-    nl: 'Kwartalen die nog niet als aangegeven en betaald zijn gemarkeerd.',
+  'vat.stillToPayHint': { en: 'Not yet filed and paid:', nl: 'Nog niet aangegeven en betaald:' },
+  'vat.allSettled': {
+    en: 'Every quarter this year is marked filed and paid.',
+    nl: 'Elk kwartaal dit jaar is gemarkeerd als aangegeven en betaald.',
+  },
+  'vat.grossHint': {
+    en: '{gross} was charged across all of {year}, including quarters already settled.',
+    nl: '{gross} is over heel {year} in rekening gebracht, inclusief al afgeronde kwartalen.',
   },
   'vat.markSettled': { en: 'Mark as filed and paid', nl: 'Markeer als aangegeven en betaald' },
   'vat.deadline': { en: 'Filing deadline', nl: 'Aangiftedeadline' },
@@ -95,6 +100,8 @@ export const STRINGS = {
   'bd.projectedRevenue': { en: 'Projected revenue', nl: 'Verwachte omzet' },
   'bd.projectedProfit': { en: 'Projected profit', nl: 'Verwachte winst' },
   'bd.projectedTax': { en: 'Projected income tax', nl: 'Verwachte inkomstenbelasting' },
+  'bd.netProfit': { en: 'Net profit (est.)', nl: 'Nettowinst (schatting)' },
+  'bd.projectedNetProfit': { en: 'Projected net profit', nl: 'Verwachte nettowinst' },
   'bd.onProfitSoFar': { en: 'On profit so far', nl: 'Over de winst tot nu toe' },
   'bd.projectedFullYear': { en: 'Projected full year', nl: 'Verwacht over het hele jaar' },
   'bd.nextDeadline': { en: 'Next VAT deadline', nl: 'Volgende BTW-deadline' },
