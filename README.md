@@ -64,19 +64,28 @@ rates that should be checked against belastingdienst.nl. Neither is tax advice.
 
 ## Screenshots
 
-> Note: the screenshots below predate the light/dark restyle and the Belastingdienst tab.
+All figures below are fictional demo data, not real bookkeeping.
 
 ### Home
 
-The landing page gives quick access to the main bookkeeping workflows.
+Quick access to the main flows, with backup and AI-assisted import below.
 
-![Bookkeeping Admin dashboard overview](public/screenshots/dashboard-overview.png)
+![Bookkeeping Admin home page in light mode](public/screenshots/home.png)
 
-### Expenses Flow
+### Invoices
 
-The expenses page shows the local-first receipt logging flow, VAT selection, and running totals for each expense entry.
+Saved invoices as a sortable table: select rows to download their PDFs in bulk,
+mark paid inline, and read the column totals in the closing row.
 
-![Bookkeeping Admin expenses flow](public/screenshots/expenses-flow.png)
+![Invoice table with selection, status chips and a totals row](public/screenshots/invoices.png)
+
+### Belastingdienst
+
+The tax year in one view — receivables, net VAT per quarter, and a projection to
+31 December with the income tax estimate broken down step by step. Shown in dark
+mode; the app follows your system setting and can be overridden.
+
+![Tax year overview with donut, quarterly VAT bars and projection chart](public/screenshots/belastingdienst.png)
 
 ## Project Structure
 

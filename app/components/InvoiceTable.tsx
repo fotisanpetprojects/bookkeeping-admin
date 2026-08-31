@@ -18,12 +18,13 @@ import {
 type SortKey = 'invoiceNumber' | 'date' | 'client' | 'net' | 'vat' | 'total' | 'status';
 type Direction = 'asc' | 'desc';
 
-function Icon({ name }: { name: 'load' | 'print' | 'edit' | 'delete' }) {
+function Icon({ name }: { name: 'load' | 'print' | 'edit' | 'delete' | 'download' }) {
   const paths: Record<string, string> = {
     load: 'M4 8l6 5 6-5M10 13V3',
     print: 'M6 7V3h8v4M6 14H4V8h12v6h-2M6 12h8v5H6z',
     edit: 'M3 15.5V17h1.5l8-8L11 7.5l-8 8zM13 6l1-1 1.5 1.5-1 1L13 6z',
     delete: 'M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10',
+    download: 'M10 3v9m0 0l-3.5-3.5M10 12l3.5-3.5M4 15.5h12',
   };
 
   return (
@@ -40,6 +41,7 @@ export default function InvoiceTable({
   onEdit,
   onDelete,
   onTogglePaid,
+  onDownloadMany,
 }: {
   invoices: StoredInvoice[];
   onLoad: (invoice: StoredInvoice) => void;
@@ -47,8 +49,10 @@ export default function InvoiceTable({
   onEdit: (invoice: StoredInvoice) => void;
   onDelete: (invoice: StoredInvoice) => void;
   onTogglePaid: (invoice: StoredInvoice) => void;
+  onDownloadMany: (invoices: StoredInvoice[]) => void;
 }) {
   const { t } = useT();
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [direction, setDirection] = useState<Direction>('desc');
 
@@ -81,6 +85,27 @@ export default function InvoiceTable({
     total: sumEuros(sorted.map((invoice) => invoice.totalAmount)),
   }), [sorted]);
 
+  // Only invoices that can produce a PDF are selectable.
+  const printable = useMemo(() => sorted.filter(isInvoiceRecord), [sorted]);
+  const selectedInvoices = useMemo(
+    () => printable.filter((invoice) => selected.has(invoice.id)),
+    [printable, selected]
+  );
+  const allSelected = printable.length > 0 && selectedInvoices.length === printable.length;
+
+  const toggleOne = (id: number) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelected(allSelected ? new Set() : new Set(printable.map((invoice) => invoice.id)));
+  };
+
   const toggleSort = (key: SortKey) => {
     if (key === sortKey) {
       setDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
@@ -106,11 +131,45 @@ export default function InvoiceTable({
     return <div className="card p-6 muted">{t('inv.none')}</div>;
   }
 
+  const downloadLabel =
+    selectedInvoices.length === 0
+      ? t('inv.downloadNone')
+      : selectedInvoices.length === 1
+        ? t('inv.downloadSelected', { count: 1 })
+        : t('inv.downloadSelectedPlural', { count: selectedInvoices.length });
+
   return (
-    <div className="card overflow-x-auto">
-      <table className="data-table min-w-[860px]">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          className={selectedInvoices.length > 0 ? 'btn btn-primary' : 'btn'}
+          disabled={selectedInvoices.length === 0}
+          title={downloadLabel}
+          onClick={() => onDownloadMany(selectedInvoices)}
+        >
+          <Icon name="download" />
+          {downloadLabel}
+        </button>
+
+        {selectedInvoices.length > 0 && (
+          <span className="text-sm muted">
+            {t('inv.selectedCount', { count: selectedInvoices.length })}
+          </span>
+        )}
+      </div>
+
+      <div className="card overflow-x-auto">
+      <table className="data-table min-w-[900px]">
         <thead>
           <tr>
+            <th className="w-9">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                aria-label={t('inv.selectAll')}
+              />
+            </th>
             {columns.map((column) => (
               <th
                 key={column.key}
@@ -135,7 +194,16 @@ export default function InvoiceTable({
             const modern = isInvoiceRecord(invoice);
 
             return (
-              <tr key={invoice.id}>
+              <tr key={invoice.id} className={selected.has(invoice.id) ? 'row-selected' : ''}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(invoice.id)}
+                    disabled={!modern}
+                    onChange={() => toggleOne(invoice.id)}
+                    aria-label={t('inv.selectRow')}
+                  />
+                </td>
                 <td className="font-medium">{invoice.invoiceNumber}</td>
                 <td className="whitespace-nowrap">{formatDate(getInvoiceDate(invoice))}</td>
                 <td className="max-w-[190px] truncate">{getInvoiceClientName(invoice)}</td>
@@ -189,7 +257,7 @@ export default function InvoiceTable({
 
         <tfoot>
           <tr className="totals-row">
-            <td colSpan={3} className="text-sm font-semibold uppercase tracking-wide">
+            <td colSpan={4} className="text-sm font-semibold uppercase tracking-wide">
               {t('total.label')}
             </td>
             <td className="text-right text-base font-semibold tabular-nums">{formatCurrency(totals.net)}</td>
@@ -199,6 +267,7 @@ export default function InvoiceTable({
           </tr>
         </tfoot>
       </table>
+      </div>
     </div>
   );
 }

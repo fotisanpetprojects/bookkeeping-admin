@@ -95,7 +95,13 @@ export function Donut({ slices, centerLabel, centerValue }: {
   return (
     <div className="relative">
       <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
-        <svg width={size} height={size} role="img" aria-label={`${centerLabel}: ${centerValue}`}>
+        <svg
+          width={size}
+          height={size}
+          className="shrink-0"
+          role="img"
+          aria-label={`${centerLabel}: ${centerValue}`}
+        >
           {segments.map(({ slice, a0, a1, mid }) => (
             <path
               key={slice.label}

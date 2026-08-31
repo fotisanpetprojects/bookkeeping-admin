@@ -302,3 +302,7 @@ body {
   z-index: 40;
   box-shadow: var(--shadow-raised);
 }
+
+/* A selected row is tinted so the selection is visible while scanning. */
+.data-table tbody tr.row-selected td { background: var(--accent-soft); }
+.data-table tbody tr.row-selected:hover td { background: var(--accent-soft); }

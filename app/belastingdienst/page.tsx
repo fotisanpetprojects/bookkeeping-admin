@@ -378,7 +378,7 @@ export default function BelastingdienstPage() {
             </div>
           ) : (
             <Donut
-              centerLabel={t('common.exVat')}
+              centerLabel={t('bd.revenueCentre')}
               centerValue={formatEuroWhole(data.revenueExVat)}
               slices={[
                 { label: t('bd.takeHome'), value: takeHome, color: SERIES.blue },

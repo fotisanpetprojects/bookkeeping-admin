@@ -516,6 +516,33 @@ export default function InvoicesPage() {
     }
   };
 
+  /**
+   * Save each selected invoice as its own PDF. Browsers throttle simultaneous
+   * downloads, so they are spaced out rather than fired in one burst.
+   */
+  const downloadManyInvoices = async (invoices: StoredInvoice[]) => {
+    const records = invoices.filter(isInvoiceRecord);
+
+    if (records.length === 0) {
+      return;
+    }
+
+    setError('');
+
+    for (const [index, invoice] of records.entries()) {
+      downloadInvoicePdf(resolveInvoiceForDisplay(invoice, businessProfiles));
+      if (index < records.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      }
+    }
+
+    setNotice(
+      records.length === 1
+        ? `Downloaded invoice ${records[0].invoiceNumber}.`
+        : `Downloaded ${records.length} invoices.`
+    );
+  };
+
   const printSavedInvoice = (invoice: InvoiceRecord) => {
     loadSavedInvoice(invoice, { shouldScroll: false });
     downloadInvoicePdf(resolveInvoiceForDisplay(invoice, businessProfiles));
@@ -1077,6 +1104,7 @@ export default function InvoicesPage() {
           }}
           onDelete={deleteInvoice}
           onTogglePaid={togglePaid}
+          onDownloadMany={downloadManyInvoices}
         />
       </section>
     </main>

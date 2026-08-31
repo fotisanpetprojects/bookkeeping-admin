@@ -91,6 +91,7 @@ export const STRINGS = {
   'bd.overdue': { en: 'Overdue', nl: 'Achterstallig' },
   'bd.nothingOverdue': { en: 'Nothing past due', nl: 'Niets over de vervaldatum' },
   'bd.netVatYear': { en: 'Net VAT for the year', nl: 'Netto BTW over het jaar' },
+  'bd.revenueCentre': { en: 'Revenue', nl: 'Omzet' },
   'bd.revenueSplit': { en: 'Where the revenue goes', nl: 'Waar de omzet heen gaat' },
   'bd.takeHome': { en: 'Take-home (est.)', nl: 'Netto over (schatting)' },
   'bd.incomeTaxEst': { en: 'Income tax (est.)', nl: 'Inkomstenbelasting (schatting)' },
@@ -318,6 +319,12 @@ export const STRINGS = {
     nl: 'Nog geen klantprofielen opgeslagen. Voeg er een toe op de Profielen-pagina zodat het Aan-blok automatisch wordt ingevuld.',
   },
 
+  'inv.selectAll': { en: 'Select all invoices', nl: 'Alle facturen selecteren' },
+  'inv.selectRow': { en: 'Select invoice', nl: 'Factuur selecteren' },
+  'inv.downloadSelected': { en: 'Download {count} PDF', nl: '{count} PDF downloaden' },
+  'inv.downloadSelectedPlural': { en: 'Download {count} PDFs', nl: '{count} PDF\'s downloaden' },
+  'inv.downloadNone': { en: 'Select invoices to download', nl: 'Selecteer facturen om te downloaden' },
+  'inv.selectedCount': { en: '{count} selected', nl: '{count} geselecteerd' },
   'total.label': { en: 'Total', nl: 'Totaal' },
 
   'exp.dateRange': { en: 'Allowed date range: {min} to {max}', nl: 'Toegestane datumreeks: {min} tot {max}' },
