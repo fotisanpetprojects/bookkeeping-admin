@@ -120,15 +120,15 @@ export default function BackupPanel() {
   };
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
+    <section className="card p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <h2 className="text-xl font-semibold">Backup &amp; restore</h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/70">
+          <p className="mt-2 max-w-2xl text-sm muted">
             Everything is stored only in this browser. Clearing site data, switching
             browsers or using a different profile loses it. Export a backup regularly.
           </p>
-          <p className="mt-2 text-sm text-white/50">
+          <p className="mt-2 text-sm faint">
             Currently stored: {invoices.length} invoice(s) · {expenses.length} expense(s) ·{' '}
             {clientProfiles.length} client profile(s) · {businessProfiles.length} business
             profile(s)
@@ -138,27 +138,27 @@ export default function BackupPanel() {
         <button
           onClick={handleExport}
           disabled={!hasData}
-          className="rounded-full bg-cyan-400 px-5 py-3 font-medium text-black hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-40"
         >
           Download backup
         </button>
       </div>
 
-      <div className="mt-5 border-t border-white/10 pt-5">
-        <label className="block text-sm text-white/60">
+      <div className="mt-5 border-t border-[var(--line)] pt-5">
+        <label className="block text-sm muted">
           <span className="mb-2 block">Restore from a backup file</span>
           <input
             ref={fileInputRef}
             type="file"
             accept="application/json,.json"
             onChange={handleFileChosen}
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-3 text-white file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
+            className="field max-w-md file:mr-3 file:rounded-[7px] file:border-0 file:bg-[var(--surface-sunken)] file:px-3 file:py-1.5 file:text-sm file:font-medium"
           />
         </label>
 
         {pendingBackup && pendingCounts && (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="text-sm text-white/80">
+          <div className="mt-4 panel p-4">
+            <div className="text-sm muted">
               <span className="font-medium">{pendingFileName}</span> contains{' '}
               {pendingCounts.invoices} invoice(s), {pendingCounts.expenses} expense(s),{' '}
               {pendingCounts.clientProfiles} client profile(s) and{' '}
@@ -180,7 +180,7 @@ export default function BackupPanel() {
                 />
                 <span>
                   <span className="font-medium">Merge (safe)</span>
-                  <span className="block text-white/60">
+                  <span className="block muted">
                     Adds entries from the backup that are not already here. Nothing you
                     currently have is changed or removed.
                   </span>
@@ -197,7 +197,7 @@ export default function BackupPanel() {
                 />
                 <span>
                   <span className="font-medium">Replace everything</span>
-                  <span className="block text-white/60">
+                  <span className="block muted">
                     Discards what is stored here and uses the backup instead. A safety
                     backup is downloaded first.
                   </span>
@@ -208,13 +208,13 @@ export default function BackupPanel() {
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 onClick={handleRestore}
-                className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-black hover:opacity-90"
+                className="btn btn-primary"
               >
                 {mode === 'merge' ? 'Merge backup' : 'Replace with backup'}
               </button>
               <button
                 onClick={clearPending}
-                className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                className="btn"
               >
                 Cancel
               </button>
@@ -223,13 +223,13 @@ export default function BackupPanel() {
         )}
 
         {error && (
-          <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">
+          <div className="mt-4 panel p-3 text-sm text-[var(--bad)]">
             {error}
           </div>
         )}
 
         {notice && !error && (
-          <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+          <div className="mt-4 panel p-3 text-sm text-[var(--good)]">
             {notice}
           </div>
         )}

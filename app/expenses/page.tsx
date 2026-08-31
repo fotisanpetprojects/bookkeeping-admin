@@ -1,7 +1,6 @@
 'use client';
 
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
 import { useT } from '@/lib/i18n';
 import {
@@ -290,34 +289,28 @@ export default function ExpensesPage() {
 
   return (
     <main className="space-y-6">
-      <Link
-        href="/"
-        className="inline-block rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-      >
-        ← Back
-      </Link>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-semibold">{t('exp.title')}</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <p className="mt-2 text-sm muted">
             Allowed date range: {minDate} to {today}
           </p>
         </div>
 
         {years.length > 0 && (
-          <label className="text-sm text-white/60">
+          <label className="text-sm muted">
             <span className="mb-2 block">{t('common.year')}</span>
             <select
-              className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+              className="field"
               value={yearFilter}
               onChange={(event) => setYearFilter(event.target.value)}
             >
-              <option value="all" className="text-black">
+              <option value="all" style={{ color: "var(--ink)", background: "var(--surface)" }}>
                 {t('common.allYears')}
               </option>
               {years.map((year) => (
-                <option key={year} value={String(year)} className="text-black">
+                <option key={year} value={String(year)} style={{ color: "var(--ink)", background: "var(--surface)" }}>
                   {year}
                 </option>
               ))}
@@ -328,38 +321,38 @@ export default function ExpensesPage() {
 
       {expenses.length > 0 && (
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm text-white/50">{t('exp.exVat')}</div>
+          <div className="card p-5">
+            <div className="text-sm faint">{t('exp.exVat')}</div>
             <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.exVat)}</div>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm text-white/50">{t('exp.deductibleVat')}</div>
+          <div className="card p-5">
+            <div className="text-sm faint">{t('exp.deductibleVat')}</div>
             <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.vat)}</div>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm text-white/50">{t('exp.inclVat')}</div>
+          <div className="card p-5">
+            <div className="text-sm faint">{t('exp.inclVat')}</div>
             <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.total)}</div>
           </div>
         </div>
       )}
 
       {undatedCount > 0 && (
-        <div className="rounded-3xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-100">
+        <div className="card p-4 text-sm text-[var(--bad)]">
           {undatedCount} expense(s) have a missing, invalid or implausible date and are
           left out of the year filter and totals. Edit them to fix the date.
         </div>
       )}
 
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+      <div className="card p-6">
         {editingId !== null && (
-          <div className="mb-4 rounded-2xl border border-cyan-400/30 bg-cyan-400/10 p-3 text-sm text-cyan-100">
+          <div className="mb-4 panel p-3 text-sm text-[var(--accent)]">
             Editing an existing expense. Saving overwrites it.
           </div>
         )}
 
         <div className="grid max-w-xl gap-3">
           <input
-            className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/40 outline-none"
+            className="field"
             type="date"
             min={minDate}
             max={today}
@@ -368,21 +361,21 @@ export default function ExpensesPage() {
           />
 
           <input
-            className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/40 outline-none"
+            className="field"
             placeholder="Supplier"
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
           />
 
           <input
-            className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/40 outline-none"
+            className="field"
             placeholder="Category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           />
 
           <input
-            className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/40 outline-none"
+            className="field"
             type="number"
             step="0.01"
             min="0"
@@ -392,12 +385,12 @@ export default function ExpensesPage() {
           />
 
           <select
-            className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+            className="field"
             value={vatSelection}
             onChange={(e) => setVatSelection(e.target.value)}
           >
             {VAT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value} className="text-black">
+              <option key={option.value} value={option.value} style={{ color: "var(--ink)", background: "var(--surface)" }}>
                 VAT {option.label}
               </option>
             ))}
@@ -405,7 +398,7 @@ export default function ExpensesPage() {
 
           {vatSelection === 'custom' && (
             <input
-              className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/40 outline-none"
+              className="field"
               type="number"
               step="0.01"
               min="0"
@@ -417,13 +410,13 @@ export default function ExpensesPage() {
 
           <input
             ref={fileInputRef}
-            className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-medium file:text-black"
+            className="field file:mr-3 file:rounded-[7px] file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-[var(--accent-ink)]"
             type="file"
             accept=".pdf,image/*"
             onChange={handleReceiptUpload}
           />
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/80">
+          <div className="panel p-4 text-sm muted">
             <div>VAT rate: {effectiveVatRate}%</div>
             <div>VAT amount: {formatCurrency(calculatedVatAmount)}</div>
             <div>Total: {formatCurrency(calculatedTotal)}</div>
@@ -431,13 +424,13 @@ export default function ExpensesPage() {
           </div>
 
           {error && (
-            <div className="rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">
+            <div className="panel p-3 text-sm text-[var(--bad)]">
               {error}
             </div>
           )}
 
           {notice && !error && (
-            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+            <div className="panel p-3 text-sm text-[var(--good)]">
               {notice}
             </div>
           )}
@@ -445,7 +438,7 @@ export default function ExpensesPage() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={saveExpense}
-              className="rounded-2xl bg-cyan-400 px-4 py-3 font-medium text-black hover:opacity-90"
+              className="btn btn-primary"
             >
               {editingId !== null ? 'Save changes' : 'Add Expense'}
             </button>
@@ -453,7 +446,7 @@ export default function ExpensesPage() {
             {editingId !== null && (
               <button
                 onClick={resetForm}
-                className="rounded-2xl border border-white/10 px-4 py-3 font-medium hover:bg-white/10"
+                className="btn"
               >
                 Cancel edit
               </button>
@@ -464,7 +457,7 @@ export default function ExpensesPage() {
 
       <div className="space-y-3">
         {sortedExpenses.length === 0 && expenses.length > 0 && (
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">
+          <div className="card p-6 muted">
             No expenses in {yearFilter}.
           </div>
         )}
@@ -472,11 +465,11 @@ export default function ExpensesPage() {
         {sortedExpenses.map((expense) => (
           <div
             key={expense.id}
-            className="rounded-3xl border border-white/10 bg-white/5 p-6"
+            className="card p-6"
           >
             <div className="mb-2 text-lg font-semibold">{expense.supplier}</div>
-            <div className="text-sm text-white/60">{expense.date}</div>
-            <div className="mt-3 space-y-1 text-sm text-white/80">
+            <div className="text-sm muted">{expense.date}</div>
+            <div className="mt-3 space-y-1 text-sm muted">
               <div>Category: {expense.category || '-'}</div>
               <div>Ex VAT: {formatCurrency(expense.amountExVat)}</div>
               <div>VAT rate: {expense.vatRate}%</div>
@@ -488,14 +481,14 @@ export default function ExpensesPage() {
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
                 onClick={() => startEditing(expense)}
-                className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                className="btn"
               >
                 Edit
               </button>
 
               <button
                 onClick={() => deleteExpense(expense)}
-                className="rounded-full border border-red-400/30 px-4 py-2 text-sm text-red-200 hover:bg-red-400/10"
+                className="btn btn-danger"
               >
                 Delete
               </button>
@@ -504,7 +497,7 @@ export default function ExpensesPage() {
                 <a
                   href={expense.receiptDataUrl}
                   download={expense.receiptName || 'receipt'}
-                  className="text-sm text-cyan-300 underline"
+                  className="text-sm text-[var(--accent)] underline"
                 >
                   Download receipt
                 </a>

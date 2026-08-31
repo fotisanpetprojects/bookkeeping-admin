@@ -52,15 +52,13 @@ function Stat({ label, value, sub, tone }: {
 }) {
   return (
     <div
-      className={`rounded-3xl border p-5 ${
-        tone === 'warn'
-          ? 'border-amber-400/30 bg-amber-400/10'
-          : 'border-white/10 bg-white/5'
+      className={`card p-5 ${
+        tone === 'warn' ? 'border-[var(--warn)] bg-[var(--warn-soft)]' : ''
       }`}
     >
-      <div className="text-sm text-white/50">{label}</div>
+      <div className="text-sm faint">{label}</div>
       <div className="mt-2 text-2xl font-semibold">{value}</div>
-      {sub && <div className="mt-1 text-xs text-white/50">{sub}</div>}
+      {sub && <div className="mt-1 text-xs faint">{sub}</div>}
     </div>
   );
 }
@@ -303,7 +301,7 @@ export default function BelastingdienstPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-semibold">{t('bd.title')}</h1>
-          <p className="mt-2 max-w-2xl text-sm text-white/60">
+          <p className="mt-2 max-w-2xl text-sm muted">
 {t('bd.subtitle')}
           </p>
         </div>
@@ -311,20 +309,20 @@ export default function BelastingdienstPage() {
         <div className="flex flex-wrap items-end gap-3">
           <button
             onClick={exportYear}
-            className="rounded-full border border-white/10 px-4 py-3 text-sm hover:bg-white/10"
+            className="rounded-full border border-[var(--line)] px-4 py-3 text-sm hover:bg-white/10"
           >
             {t('bd.download', { year })}
           </button>
 
-          <label className="text-sm text-white/60">
+          <label className="text-sm muted">
           <span className="mb-2 block">{t('common.taxYear')}</span>
           <select
-            className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+            className="field"
             value={year}
             onChange={(event) => setYear(Number(event.target.value))}
           >
             {years.map((option) => (
-              <option key={option} value={option} className="text-black">
+              <option key={option} value={option} style={{ color: "var(--ink)", background: "var(--surface)" }}>
                 {option}
               </option>
             ))}
@@ -334,7 +332,7 @@ export default function BelastingdienstPage() {
       </div>
 
       {deadline && deadlineInfo && (
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+        <div className="card p-4 text-sm muted">
           {t('bd.nextDeadline')}: Q{nextQuarter?.quarter} {year} — {formatDate(toLocalIsoDate(deadline))} ({deadlineInfo.label})
         </div>
       )}
@@ -364,15 +362,15 @@ export default function BelastingdienstPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <section className="card p-6">
           <h2 className="text-xl font-semibold">{t('bd.revenueSplit')}</h2>
-          <p className="mt-1 mb-4 text-sm text-white/60">
+          <p className="mt-1 mb-4 text-sm muted">
             Your {year} invoiced revenue ex VAT, split by what leaves again. BTW is not
             shown here — it is collected for the Belastingdienst, so it was never your
             revenue. It has its own figure above.
           </p>
           {data.taxToDate.profit < 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-sm text-white/70">
+            <div className="panel p-5 text-sm muted">
               Expenses of {formatCurrency(data.expensesExVat)} exceed revenue of{' '}
               {formatCurrency(data.revenueExVat)}, so {year} is a loss of{' '}
               {formatCurrency(Math.abs(data.taxToDate.profit))}. There is nothing to split
@@ -391,9 +389,9 @@ export default function BelastingdienstPage() {
           )}
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <section className="card p-6">
           <h2 className="text-xl font-semibold">{t('bd.netVatPerQuarter')}</h2>
-          <p className="mt-1 mb-4 text-sm text-white/60">
+          <p className="mt-1 mb-4 text-sm muted">
             VAT charged minus VAT deductible. Bars below the line are quarters you reclaim.
           </p>
           <QuarterBars
@@ -407,18 +405,18 @@ export default function BelastingdienstPage() {
         </section>
       </div>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
+      <section className="card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">{t('bd.projection')}</h2>
-            <p className="mt-1 text-sm text-white/60">
+            <p className="mt-1 text-sm muted">
               Cumulative revenue and expenses ex VAT. The dashed part assumes the rest of{' '}
               {year} matches your monthly average so far.
             </p>
           </div>
           <button
             onClick={() => setShowTable((value) => !value)}
-            className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+            className="btn"
           >
             {showTable ? t('common.hideTable') : t('common.showTable')}
           </button>
@@ -437,20 +435,20 @@ export default function BelastingdienstPage() {
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="text-xs uppercase tracking-[0.14em] text-white/45">{t('bd.projectedRevenue')}</div>
+          <div className="panel p-4">
+            <div className="text-xs uppercase tracking-[0.14em] faint">{t('bd.projectedRevenue')}</div>
             <div className="mt-2 text-xl font-semibold">{formatCurrency(data.cumulativeRevenue[11])}</div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="text-xs uppercase tracking-[0.14em] text-white/45">{t('bd.projectedProfit')}</div>
+          <div className="panel p-4">
+            <div className="text-xs uppercase tracking-[0.14em] faint">{t('bd.projectedProfit')}</div>
             <div className="mt-2 text-xl font-semibold">{formatCurrency(data.taxProjected.profit)}</div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="text-xs uppercase tracking-[0.14em] text-white/45">{t('bd.projectedTax')}</div>
+          <div className="panel p-4">
+            <div className="text-xs uppercase tracking-[0.14em] faint">{t('bd.projectedTax')}</div>
             <div className="mt-2 text-xl font-semibold">{formatCurrency(data.taxProjected.totalTax)}</div>
           </div>
-          <div className="rounded-2xl border border-cyan-400/25 bg-cyan-400/10 p-4">
-            <div className="text-xs uppercase tracking-[0.14em] text-cyan-200">{t('bd.projectedNetProfit')}</div>
+          <div className="panel border-[var(--accent-line)] bg-[var(--accent-soft)] p-4">
+            <div className="text-xs uppercase tracking-[0.14em] text-[var(--accent)]">{t('bd.projectedNetProfit')}</div>
             <div className="mt-2 text-xl font-semibold">{formatCurrency(data.cumulativeNetProfit[11])}</div>
           </div>
         </div>
@@ -458,7 +456,7 @@ export default function BelastingdienstPage() {
         {showTable && (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
-              <thead className="text-left text-white/50">
+              <thead className="text-left faint">
                 <tr>
                   <th className="py-2">Month</th>
                   <th className="py-2 text-right">Cumulative revenue</th>
@@ -469,12 +467,12 @@ export default function BelastingdienstPage() {
               </thead>
               <tbody className="tabular-nums">
                 {MONTHS.map((month, index) => (
-                  <tr key={month} className="border-t border-white/10">
+                  <tr key={month} className="border-t border-[var(--line)]">
                     <td className="py-2">{month}</td>
                     <td className="py-2 text-right">{formatCurrency(data.cumulativeRevenue[index])}</td>
                     <td className="py-2 text-right">{formatCurrency(data.cumulativeExpenses[index])}</td>
                     <td className="py-2 text-right">{formatCurrency(data.cumulativeNetProfit[index])}</td>
-                    <td className="py-2 text-right text-white/50">
+                    <td className="py-2 text-right faint">
                       {index <= data.lastMonthWithData ? 'Actual' : 'Projected'}
                     </td>
                   </tr>
@@ -485,17 +483,17 @@ export default function BelastingdienstPage() {
         )}
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
+      <section className="card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">{t('bd.howBuilt')}</h2>
-            <p className="mt-1 max-w-2xl text-sm text-white/60">
+            <p className="mt-1 max-w-2xl text-sm muted">
               {t('tax.effective')}: {data.taxToDate.effectiveRate.toFixed(1)}%.
             </p>
           </div>
           <button
             onClick={() => setShowAssumptions((value) => !value)}
-            className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+            className="btn"
           >
             {showAssumptions ? t('bd.hideAssumptions') : t('bd.editAssumptions')}
           </button>
@@ -515,19 +513,19 @@ export default function BelastingdienstPage() {
                 [t('tax.credits'), -data.taxToDate.credits],
                 [`${t('tax.zvw')} (${settings.zvwPercent}%)`, data.taxToDate.zvw],
               ].map(([label, value]) => (
-                <tr key={label as string} className="border-t border-white/10">
-                  <td className="py-2 text-white/70">{label}</td>
+                <tr key={label as string} className="border-t border-[var(--line)]">
+                  <td className="py-2 muted">{label}</td>
                   <td className="py-2 text-right">{formatCurrency(value as number)}</td>
                 </tr>
               ))}
-              <tr className="border-t border-white/20">
+              <tr className="border-t border-[var(--line-strong)]">
                 <td className="py-2 font-medium">{t('tax.total')}</td>
                 <td className="py-2 text-right text-lg font-semibold">
                   {formatCurrency(data.taxToDate.totalTax)}
                 </td>
               </tr>
               <tr>
-                <td colSpan={2} className="pt-2 text-xs text-white/40">
+                <td colSpan={2} className="pt-2 text-xs faint">
                   {t('tax.basisNote')}
                 </td>
               </tr>
@@ -536,27 +534,27 @@ export default function BelastingdienstPage() {
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-            <div className="text-xs uppercase tracking-[0.14em] text-white/45">
+          <div className="panel p-5">
+            <div className="text-xs uppercase tracking-[0.14em] faint">
               {t('bd.onProfitSoFar')}
             </div>
             <div className="mt-2 text-2xl font-semibold">
               {formatCurrency(data.taxToDate.totalTax)}
             </div>
-            <div className="mt-1 text-xs text-white/50">
+            <div className="mt-1 text-xs faint">
               Profit {formatCurrency(data.taxToDate.profit)} · effective{' '}
               {data.taxToDate.effectiveRate.toFixed(1)}%
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-            <div className="text-xs uppercase tracking-[0.14em] text-white/45">
+          <div className="panel p-5">
+            <div className="text-xs uppercase tracking-[0.14em] faint">
               {t('bd.projectedFullYear')}
             </div>
             <div className="mt-2 text-2xl font-semibold">
               {formatCurrency(data.taxProjected.totalTax)}
             </div>
-            <div className="mt-1 text-xs text-white/50">
+            <div className="mt-1 text-xs faint">
               Profit {formatCurrency(data.taxProjected.profit)} · effective{' '}
               {data.taxProjected.effectiveRate.toFixed(1)}%
             </div>
@@ -564,7 +562,7 @@ export default function BelastingdienstPage() {
         </div>
 
         {showAssumptions && (
-          <div className="mt-5 grid gap-4 border-t border-white/10 pt-5 md:grid-cols-2">
+          <div className="mt-5 grid gap-4 border-t border-[var(--line)] pt-5 md:grid-cols-2">
             {([
               [t('tax.zelfstandigenaftrek'), 'zelfstandigenaftrek'],
               [t('tax.startersaftrek'), 'startersaftrek'],
@@ -573,24 +571,24 @@ export default function BelastingdienstPage() {
               [t('tax.zvwPercent'), 'zvwPercent'],
               [t('tax.zvwMax'), 'zvwMaxBase'],
             ] as const).map(([label, key]) => (
-              <label key={key} className="text-sm text-white/60">
+              <label key={key} className="text-sm muted">
                 <span className="mb-2 block">{label}</span>
                 <input
                   type="number"
                   step="0.01"
                   value={settings[key]}
                   onChange={(event) => updateSetting({ [key]: Number(event.target.value) || 0 })}
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+                  className="field"
                 />
               </label>
             ))}
 
             <div className="md:col-span-2">
-              <div className="mb-2 text-sm text-white/60">{t('tax.brackets')}</div>
+              <div className="mb-2 text-sm muted">{t('tax.brackets')}</div>
               <div className="space-y-2">
                 {settings.brackets.map((bracket, index) => (
                   <div key={index} className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="text-white/50">
+                    <span className="faint">
                       {bracket.upTo === null ? 'Above previous bracket' : 'Up to €'}
                     </span>
                     {bracket.upTo !== null && (
@@ -605,10 +603,10 @@ export default function BelastingdienstPage() {
                           );
                           updateSetting({ brackets });
                         }}
-                        className="w-32 rounded-xl border border-white/10 bg-white/5 p-2 text-white outline-none"
+                        className="w-32 field"
                       />
                     )}
-                    <span className="text-white/50">at</span>
+                    <span className="faint">at</span>
                     <input
                       type="number"
                       step="0.01"
@@ -621,9 +619,9 @@ export default function BelastingdienstPage() {
                         );
                         updateSetting({ brackets });
                       }}
-                      className="w-24 rounded-xl border border-white/10 bg-white/5 p-2 text-white outline-none"
+                      className="w-24 field"
                     />
-                    <span className="text-white/50">%</span>
+                    <span className="faint">%</span>
                   </div>
                 ))}
               </div>
@@ -632,26 +630,26 @@ export default function BelastingdienstPage() {
             <div className="md:col-span-2 flex flex-wrap gap-3">
               <button
                 onClick={() => updateSetting(DEFAULT_TAX_SETTINGS)}
-                className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                className="btn"
               >
                 {t('tax.reset')}
               </button>
             </div>
 
             {settingsError && (
-              <div className="md:col-span-2 rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">
+              <div className="md:col-span-2 panel p-3 text-sm text-[var(--bad)]">
                 {settingsError}
               </div>
             )}
           </div>
         )}
 
-        <p className="mt-5 text-xs text-white/40">{t('tax.disclaimer', { year })}</p>
+        <p className="mt-5 text-xs faint">{t('tax.disclaimer', { year })}</p>
       </section>
 
       <Link
         href="/btw-summary"
-        className="inline-block rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+        className="inline-block btn"
       >
         See the quarterly BTW detail →
       </Link>

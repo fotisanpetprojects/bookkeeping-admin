@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { LANGUAGES, StringKey, useLanguage, useT } from '@/lib/i18n';
 
 const TABS: { href: string; key: StringKey }[] = [
-  { href: '/', key: 'nav.dashboard' },
+  { href: '/', key: 'nav.home' },
   { href: '/invoices', key: 'nav.invoices' },
   { href: '/clients', key: 'nav.profiles' },
   { href: '/expenses', key: 'nav.expenses' },
@@ -39,8 +39,8 @@ export default function NavTabs() {
               aria-current={isActive ? 'page' : undefined}
               className={
                 isActive
-                  ? 'rounded-full border border-cyan-400/60 bg-cyan-400/15 px-4 py-2 font-medium text-cyan-100'
-                  : 'rounded-full border border-white/10 px-4 py-2 text-white/80 hover:bg-white/10'
+                  ? 'btn border-[var(--accent-line)] bg-[var(--accent-soft)] font-medium text-[var(--accent)]'
+                  : 'btn'
               }
             >
               {t(tab.key)}
@@ -49,7 +49,7 @@ export default function NavTabs() {
         })}
       </nav>
 
-      <div className="flex overflow-hidden rounded-full border border-white/10">
+      <div className="btn gap-0 overflow-hidden p-0">
         {LANGUAGES.map((option) => (
           <button
             key={option.code}
@@ -57,8 +57,8 @@ export default function NavTabs() {
             aria-pressed={language === option.code}
             className={
               language === option.code
-                ? 'bg-cyan-400/20 px-3 py-2 text-xs font-medium text-cyan-100'
-                : 'px-3 py-2 text-xs text-white/60 hover:bg-white/10'
+                ? 'bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--accent)]'
+                : 'px-3 py-1.5 text-xs text-[var(--ink-3)] hover:bg-[var(--surface-sunken)]'
             }
           >
             {option.label}

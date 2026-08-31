@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { jsPDF } from 'jspdf';
+import InvoiceTable from '@/app/components/InvoiceTable';
 import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
 import {
   BusinessProfile,
@@ -21,36 +22,11 @@ import {
   getTodayString,
   isBusinessProfileComplete,
   isInvoicePaid,
-  isInvoiceOverdue,
   isInvoiceRecord,
   roundCents,
   sumEuros,
   toBusinessProfile,
 } from '@/lib/billing';
-
-function InvoiceStatusBadge({ invoice }: { invoice: StoredInvoice }) {
-  if (isInvoicePaid(invoice)) {
-    return (
-      <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">
-        Paid {invoice.paidDate ? formatDate(invoice.paidDate) : ''}
-      </span>
-    );
-  }
-
-  if (isInvoiceOverdue(invoice)) {
-    return (
-      <span className="rounded-full border border-red-400/30 bg-red-400/10 px-3 py-1 text-xs text-red-200">
-        Overdue
-      </span>
-    );
-  }
-
-  return (
-    <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white/70">
-      Outstanding
-    </span>
-  );
-}
 
 type InvoicePreviewData = Omit<InvoiceRecord, 'id' | 'clientProfile'> & {
   clientProfile: ClientProfile | null;
@@ -673,15 +649,9 @@ export default function InvoicesPage() {
 
   return (
     <main className="space-y-6">
-      <Link
-        href="/"
-        className="no-print inline-block rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-      >
-        ← Back
-      </Link>
 
       {editingInvoiceId !== null && (
-        <div className="no-print rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-4 text-sm text-cyan-100">
+        <div className="no-print card-accent p-4 text-sm text-[var(--accent)]">
           Editing a saved invoice. Choosing “Update invoice” overwrites it instead of
           creating a new one.
         </div>
@@ -689,41 +659,41 @@ export default function InvoicesPage() {
 
       <div className="no-print">
         <h1 className="text-3xl font-semibold">Invoices</h1>
-        <p className="mt-2 text-sm text-white/60">
+        <p className="mt-2 text-sm muted">
           Build invoices from saved profiles and generate VAT totals from hours and rate.
         </p>
       </div>
 
       <div className="no-print grid gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm text-white/50">Invoiced ex VAT</div>
+        <div className="card p-6">
+          <div className="text-sm faint">Invoiced ex VAT</div>
           <div className="mt-2 text-3xl font-semibold">{formatCurrency(totals.exVat)}</div>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm text-white/50">VAT to collect</div>
+        <div className="card p-6">
+          <div className="text-sm faint">VAT to collect</div>
           <div className="mt-2 text-3xl font-semibold">{formatCurrency(totals.vat)}</div>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-sm text-white/50">Total incl VAT</div>
+        <div className="card p-6">
+          <div className="text-sm faint">Total incl VAT</div>
           <div className="mt-2 text-3xl font-semibold">{formatCurrency(totals.total)}</div>
         </div>
       </div>
 
       <section className="invoice-layout grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="no-print space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+          <div className="card p-6">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-semibold">Profiles</h2>
-                <p className="mt-2 text-sm text-white/60">
+                <p className="mt-2 text-sm muted">
                   Select a saved business profile and a saved client profile.
                 </p>
               </div>
               <Link
                 href="/clients"
-                className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                className="btn"
               >
                 Edit profiles
               </Link>
@@ -732,9 +702,9 @@ export default function InvoicesPage() {
             <div className="grid gap-4">
               {businessProfiles.length > 0 && (
                 <label className="space-y-2">
-                  <span className="text-sm text-white/70">Business profile</span>
+                  <span className="text-sm muted">Business profile</span>
                   <select
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+                    className="field"
                     value={resolvedBusinessProfileId}
                     onChange={(e) => {
                       switchToDraftPreview();
@@ -742,7 +712,7 @@ export default function InvoicesPage() {
                     }}
                   >
                     {businessProfiles.map((profile) => (
-                      <option key={profile.id} value={profile.id} className="text-black">
+                      <option key={profile.id} value={profile.id} style={{ color: "var(--ink)", background: "var(--surface)" }}>
                         {profile.businessName}
                       </option>
                     ))}
@@ -750,9 +720,9 @@ export default function InvoicesPage() {
                 </label>
               )}
 
-              <div className="rounded-[2rem] border border-white/10 bg-black/20 p-4 text-sm text-white/75">
-                <div className="mb-2 text-xs uppercase tracking-[0.18em] text-white/45">From</div>
-                <div className="font-medium text-white">
+              <div className="panel p-4 text-sm muted">
+                <div className="mb-2 text-xs uppercase tracking-[0.18em] faint">From</div>
+                <div className="font-medium">
                   {businessProfile.businessName || 'Your business profile is missing'}
                 </div>
                 <div className="mt-2">{businessProfile.contactName || 'Add your business details in Profiles.'}</div>
@@ -761,20 +731,20 @@ export default function InvoicesPage() {
               </div>
 
               <label className="space-y-2">
-                <span className="text-sm text-white/70">Client profile</span>
+                <span className="text-sm muted">Client profile</span>
                 <select
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+                  className="field"
                   value={selectedClientId}
                   onChange={(e) => {
                     switchToDraftPreview();
                     setSelectedClientId(e.target.value);
                   }}
                 >
-                  <option value="" className="text-black">
+                  <option value="" style={{ color: "var(--ink)", background: "var(--surface)" }}>
                     Select a saved client profile
                   </option>
                   {clientProfiles.map((profile) => (
-                    <option key={profile.id} value={profile.id} className="text-black">
+                    <option key={profile.id} value={profile.id} style={{ color: "var(--ink)", background: "var(--surface)" }}>
                       {profile.companyName}
                     </option>
                   ))}
@@ -783,13 +753,13 @@ export default function InvoicesPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+          <div className="card p-6">
             <h2 className="text-2xl font-semibold">Invoice Details</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-sm text-white/70">Invoice number</span>
+                <span className="text-sm muted">Invoice number</span>
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                  className="field"
                   placeholder="202603-01"
                   value={invoiceNumber}
                   onChange={(e) => {
@@ -800,9 +770,9 @@ export default function InvoicesPage() {
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm text-white/70">Invoice date</span>
+                <span className="text-sm muted">Invoice date</span>
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+                  className="field"
                   type="date"
                   min={minDate}
                   max={maxFutureDate}
@@ -812,15 +782,15 @@ export default function InvoicesPage() {
                     setInvoiceDate(e.target.value);
                   }}
                 />
-                <p className="text-xs text-white/45">
+                <p className="text-xs faint">
                   This is the date printed on the invoice document.
                 </p>
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm text-white/70">Service period</span>
+                <span className="text-sm muted">Service period</span>
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                  className="field"
                   placeholder="March 2026"
                   value={periodLabel}
                   onChange={(e) => {
@@ -828,15 +798,15 @@ export default function InvoicesPage() {
                     setPeriodLabel(e.target.value);
                   }}
                 />
-                <p className="text-xs text-white/45">
+                <p className="text-xs faint">
                   Example: “March 2026” or “Q1 2026”.
                 </p>
               </label>
 
               <label className="space-y-2 md:max-w-[14rem]">
-                <span className="text-sm text-white/70">Payment terms (days)</span>
+                <span className="text-sm muted">Payment terms (days)</span>
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                  className="field"
                   type="number"
                   min="1"
                   value={resolvedPaymentTermsDays}
@@ -845,20 +815,20 @@ export default function InvoicesPage() {
                     setPaymentTermsDays(e.target.value);
                   }}
                 />
-                <p className="text-xs text-white/45">
+                <p className="text-xs faint">
                   Due date will be calculated automatically.
                 </p>
               </label>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+          <div className="card p-6">
             <h2 className="text-2xl font-semibold">Work and VAT</h2>
             <div className="mt-5 grid gap-4">
               <label className="space-y-2">
-                <span className="text-sm text-white/70">Description</span>
+                <span className="text-sm muted">Description</span>
                 <textarea
-                  className="min-h-28 w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                  className="field min-h-28"
                   placeholder="Consultancy services for monthly project support"
                   value={description}
                   onChange={(e) => {
@@ -870,9 +840,9 @@ export default function InvoicesPage() {
 
               <div className="grid gap-4 md:grid-cols-[0.5fr_0.5fr_0.45fr]">
                 <label className="space-y-2">
-                  <span className="text-sm text-white/70">Hours</span>
+                  <span className="text-sm muted">Hours</span>
                   <input
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                    className="field"
                     type="number"
                     step="0.25"
                     min="0.25"
@@ -886,9 +856,9 @@ export default function InvoicesPage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-sm text-white/70">Rate (EUR)</span>
+                  <span className="text-sm muted">Rate (EUR)</span>
                   <input
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                    className="field"
                     type="number"
                     step="0.01"
                     min="0.01"
@@ -902,9 +872,9 @@ export default function InvoicesPage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-sm text-white/70">BTW / VAT</span>
+                  <span className="text-sm muted">BTW / VAT</span>
                   <select
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+                    className="field"
                     value={vatSelection}
                     onChange={(e) => {
                       switchToDraftPreview();
@@ -912,7 +882,7 @@ export default function InvoicesPage() {
                     }}
                   >
                     {VAT_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value} className="text-black">
+                      <option key={option.value} value={option.value} style={{ color: "var(--ink)", background: "var(--surface)" }}>
                         VAT {option.label}
                       </option>
                     ))}
@@ -922,9 +892,9 @@ export default function InvoicesPage() {
 
               {vatSelection === 'custom' && (
                 <label className="max-w-[14rem] space-y-2">
-                  <span className="text-sm text-white/70">Custom VAT %</span>
+                  <span className="text-sm muted">Custom VAT %</span>
                   <input
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                    className="field"
                     type="number"
                     step="0.01"
                     min="0"
@@ -939,29 +909,29 @@ export default function InvoicesPage() {
               )}
 
               <div className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="text-sm text-white/50">Subtotal</div>
+                <div className="panel p-4">
+                  <div className="text-sm faint">Subtotal</div>
                   <div className="mt-2 text-2xl font-semibold">{formatCurrency(subtotal)}</div>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="text-sm text-white/50">VAT {effectiveVatRate}%</div>
+                <div className="panel p-4">
+                  <div className="text-sm faint">VAT {effectiveVatRate}%</div>
                   <div className="mt-2 text-2xl font-semibold">{formatCurrency(calculatedVatAmount)}</div>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="text-sm text-white/50">Total incl. VAT</div>
+                <div className="panel p-4">
+                  <div className="text-sm faint">Total incl. VAT</div>
                   <div className="mt-2 text-2xl font-semibold">{formatCurrency(calculatedTotal)}</div>
                 </div>
               </div>
             </div>
 
             {error && (
-              <div className="mt-5 rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">
+              <div className="mt-5 panel p-3 text-sm text-[var(--bad)]">
                 {error}
               </div>
             )}
 
             {notice && !error && (
-              <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+              <div className="mt-5 panel p-3 text-sm text-[var(--good)]">
                 {notice}
               </div>
             )}
@@ -969,7 +939,7 @@ export default function InvoicesPage() {
             <div className="mt-5 flex flex-wrap gap-3">
               <button
                 onClick={saveInvoice}
-                className="rounded-2xl bg-cyan-400 px-4 py-3 font-medium text-black hover:opacity-90"
+                className="btn btn-primary"
               >
                 {editingInvoiceId !== null ? 'Update invoice' : 'Save invoice'}
               </button>
@@ -977,7 +947,7 @@ export default function InvoicesPage() {
               {editingInvoiceId !== null && (
                 <button
                   onClick={cancelEditing}
-                  className="rounded-2xl border border-white/10 px-4 py-3 font-medium hover:bg-white/10"
+                  className="btn"
                 >
                   Cancel edit
                 </button>
@@ -1102,13 +1072,13 @@ export default function InvoicesPage() {
           </div>
 
           {!isBusinessProfileComplete(businessProfile) && (
-            <div className="no-print rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
+            <div className="no-print card border-[var(--warn)] bg-[var(--warn-soft)] p-5 text-sm text-[var(--warn)]">
               Your business profile is not complete yet. Add your invoice details on the Profiles page before saving invoices.
             </div>
           )}
 
           {clientProfiles.length === 0 && (
-            <div className="no-print rounded-3xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
+            <div className="no-print card border-[var(--warn)] bg-[var(--warn-soft)] p-5 text-sm text-[var(--warn)]">
               No client profiles saved yet. Add one on the Profiles page so the invoice To section can be filled automatically.
             </div>
           )}
@@ -1118,141 +1088,25 @@ export default function InvoicesPage() {
       <section className="no-print space-y-3">
         <div>
           <h2 className="text-2xl font-semibold">Saved invoices</h2>
-          <p className="mt-2 text-sm text-white/60">
-            Load a saved invoice into the preview, edit or delete it, or download a clean one-page PDF from the Print button.
+          <p className="mt-2 text-sm muted">
+            Sort any column. Actions are on the right; the checkbox marks an invoice paid, and hovering it shows the payment date.
           </p>
         </div>
 
-        {storedInvoices.length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">
-            No invoices yet.
-          </div>
-        ) : (
-          storedInvoices.map((invoice) => {
-            if (isInvoiceRecord(invoice)) {
-              return (
-                <div
-                  key={invoice.id}
-                  className="rounded-3xl border border-white/10 bg-white/5 p-6"
-                >
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-lg font-semibold">{invoice.invoiceNumber}</span>
-                        <InvoiceStatusBadge invoice={invoice} />
-                      </div>
-                      <div className="mt-1 text-sm text-white/60">
-                        {invoice.clientProfile.companyName} · {invoice.periodLabel}
-                      </div>
-                    </div>
-
-                    <div className="text-sm text-white/60">
-                      <div>Invoice date: {formatDate(invoice.invoiceDate)}</div>
-                      <div>Due date: {formatDate(invoice.dueDate)}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 md:grid-cols-4">
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <div className="text-xs uppercase tracking-[0.14em] text-white/45">Hours</div>
-                      <div className="mt-2 text-xl font-semibold">{invoice.hours}</div>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <div className="text-xs uppercase tracking-[0.14em] text-white/45">Rate</div>
-                      <div className="mt-2 text-xl font-semibold">{formatCurrency(invoice.rate)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <div className="text-xs uppercase tracking-[0.14em] text-white/45">VAT</div>
-                      <div className="mt-2 text-xl font-semibold">{formatCurrency(invoice.vatAmount)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <div className="text-xs uppercase tracking-[0.14em] text-white/45">Total</div>
-                      <div className="mt-2 text-xl font-semibold">{formatCurrency(invoice.totalAmount)}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      onClick={() => loadSavedInvoice(invoice)}
-                      className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-                    >
-                      Load
-                    </button>
-                    <button
-                      onClick={() => printSavedInvoice(invoice)}
-                      className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-black hover:opacity-90"
-                    >
-                      Print
-                    </button>
-                    <button
-                      onClick={() => togglePaid(invoice)}
-                      className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-                    >
-                      {isInvoicePaid(invoice) ? 'Mark unpaid' : 'Mark paid'}
-                    </button>
-                    <button
-                      onClick={() => startEditingInvoice(invoice)}
-                      className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteInvoice(invoice)}
-                      className="rounded-full border border-red-400/30 px-4 py-2 text-sm text-red-200 hover:bg-red-400/10"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              );
-            }
-
-            return (
-              <div
-                key={invoice.id}
-                className="rounded-3xl border border-white/10 bg-white/5 p-6"
-              >
-                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-lg font-semibold">{invoice.invoiceNumber}</span>
-                      <InvoiceStatusBadge invoice={invoice} />
-                    </div>
-                    <div className="text-sm text-white/60">{invoice.client}</div>
-                  </div>
-
-                  <div className="text-sm text-white/60">
-                    <div>Issued: {formatDate(invoice.issueDate)}</div>
-                    <div>Due: {formatDate(invoice.dueDate)}</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-1 text-sm text-white/80">
-                  <div>Description: {invoice.description}</div>
-                  <div>Ex VAT: {formatCurrency(invoice.amountExVat)}</div>
-                  <div>VAT rate: {invoice.vatRate}%</div>
-                  <div>VAT: {formatCurrency(invoice.vatAmount)}</div>
-                  <div>Total: {formatCurrency(invoice.totalAmount)}</div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    onClick={() => togglePaid(invoice)}
-                    className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-                  >
-                    {isInvoicePaid(invoice) ? 'Mark unpaid' : 'Mark paid'}
-                  </button>
-                  <button
-                    onClick={() => deleteInvoice(invoice)}
-                    className="rounded-full border border-red-400/30 px-4 py-2 text-sm text-red-200 hover:bg-red-400/10"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
+        <InvoiceTable
+          invoices={storedInvoices}
+          onLoad={(invoice) => {
+            if (isInvoiceRecord(invoice)) loadSavedInvoice(invoice);
+          }}
+          onPrint={(invoice) => {
+            if (isInvoiceRecord(invoice)) printSavedInvoice(invoice);
+          }}
+          onEdit={(invoice) => {
+            if (isInvoiceRecord(invoice)) startEditingInvoice(invoice);
+          }}
+          onDelete={deleteInvoice}
+          onTogglePaid={togglePaid}
+        />
       </section>
     </main>
   );

@@ -10,15 +10,14 @@ import { formatCurrency } from '@/lib/billing';
  * The donut order below is deliberate — it keeps yellow and orange non-adjacent.
  */
 export const SERIES = {
-  blue: '#3987e5',
-  orange: '#d95926',
-  aqua: '#199e70',
-  yellow: '#c98500',
+  blue: 'var(--series-1)',
+  aqua: 'var(--series-2)',
+  orange: 'var(--series-3)',
 } as const;
 
-const AXIS = '#898781';
-const GRID = 'rgba(255,255,255,0.08)';
-const SURFACE = '#161d31';
+const AXIS = 'var(--ink-3)';
+const GRID = 'var(--grid)';
+const SURFACE = 'var(--chart-surface)';
 
 type Tip = { x: number; y: number; title: string; value: string; sub?: string } | null;
 
@@ -27,12 +26,12 @@ function Tooltip({ tip }: { tip: Tip }) {
 
   return (
     <div
-      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-xl border border-white/15 bg-[#0b1020] px-3 py-2 text-xs shadow-xl"
+      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full card px-3 py-2 text-xs"
       style={{ left: tip.x, top: tip.y - 10 }}
     >
-      <div className="font-medium text-white">{tip.title}</div>
-      <div className="mt-0.5 text-white/80">{tip.value}</div>
-      {tip.sub && <div className="text-white/50">{tip.sub}</div>}
+      <div className="font-medium">{tip.title}</div>
+      <div className="mt-0.5 muted">{tip.value}</div>
+      {tip.sub && <div className="faint">{tip.sub}</div>}
     </div>
   );
 }
@@ -63,7 +62,7 @@ export function Donut({ slices, centerLabel, centerValue }: {
 
   if (total <= 0) {
     return (
-      <div className="flex h-[220px] items-center justify-center text-sm text-white/50">
+      <div className="flex h-[220px] items-center justify-center text-sm faint">
         Nothing to show yet for this year.
       </div>
     );
@@ -76,14 +75,18 @@ export function Donut({ slices, centerLabel, centerValue }: {
 
   // Angles are resolved before render so nothing is mutated while drawing.
   const segments = positive.reduce<
-    { slice: DonutSlice; a0: number; a1: number; mid: number }[]
+    { slice: DonutSlice; a0: number; a1: number; mid: number; gapUsed: number }[]
   >((acc, slice) => {
-    const start = acc.length > 0 ? acc[acc.length - 1].a1 + gap / 2 : -Math.PI / 2;
+    const previous = acc[acc.length - 1];
+    const start = previous ? previous.a1 + previous.gapUsed / 2 : -Math.PI / 2;
     const sweep = (slice.value / total) * Math.PI * 2;
-    const a0 = start + gap / 2;
-    const a1 = start + sweep - gap / 2;
+    // A fixed separator would swallow a very small slice whole and read as a gap
+    // in the ring, so it never takes more than a quarter of the slice itself.
+    const gapUsed = Math.min(gap, sweep * 0.25);
+    const a0 = start + gapUsed / 2;
+    const a1 = start + sweep - gapUsed / 2;
 
-    acc.push({ slice, a0, a1: Math.max(a1, a0 + 0.001), mid: (a0 + a1) / 2 });
+    acc.push({ slice, a0, a1, mid: (a0 + a1) / 2, gapUsed });
     return acc;
   }, []);
 
@@ -110,15 +113,14 @@ export function Donut({ slices, centerLabel, centerValue }: {
               onMouseLeave={() => setTip(null)}
             />
           ))}
-          <text x={cx} y={cy - 6} textAnchor="middle" className="fill-white/50" style={{ fontSize: 11 }}>
+          <text x={cx} y={cy - 6} textAnchor="middle" style={{ fill: "var(--ink-3)", fontSize: 11 }}>
             {centerLabel}
           </text>
           <text
             x={cx}
             y={cy + 15}
             textAnchor="middle"
-            className="fill-white"
-            style={{ fontSize: centerValue.length > 10 ? 14 : 17, fontWeight: 600 }}
+            style={{ fill: "var(--ink)", fontSize: centerValue.length > 10 ? 14 : 17, fontWeight: 600 }}
           >
             {centerValue}
           </text>
@@ -127,11 +129,11 @@ export function Donut({ slices, centerLabel, centerValue }: {
         <ul className="w-full space-y-2 text-sm">
           {slices.map((slice) => (
             <li key={slice.label} className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 text-white/70">
+              <span className="flex items-center gap-2 muted">
                 <span className="h-3 w-3 shrink-0 rounded-sm" style={{ background: slice.color }} />
                 {slice.label}
               </span>
-              <span className="tabular-nums text-white">{formatCurrency(slice.value)}</span>
+              <span className="tabular-nums">{formatCurrency(slice.value)}</span>
             </li>
           ))}
         </ul>
@@ -149,7 +151,7 @@ export function QuarterBars({ bars }: { bars: QuarterBar[] }) {
   const [tip, setTip] = useState<Tip>(null);
 
   if (bars.length === 0) {
-    return <div className="py-10 text-center text-sm text-white/50">No quarters yet.</div>;
+    return <div className="py-10 text-center text-sm faint">No quarters yet.</div>;
   }
 
   const width = 560;
@@ -171,7 +173,7 @@ export function QuarterBars({ bars }: { bars: QuarterBar[] }) {
     <div className="relative">
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label="Net BTW per quarter">
         <line x1={padX} x2={width - 8} y1={zeroY} y2={zeroY} stroke={AXIS} strokeWidth={1} />
-        <text x={8} y={zeroY + 4} className="fill-white/40" style={{ fontSize: 10 }}>€0</text>
+        <text x={8} y={zeroY + 4} style={{ fill: "var(--ink-3)", fontSize: 10 }}>€0</text>
 
         {bars.map((bar, index) => {
           const h = Math.abs(scale(bar.value));
@@ -202,8 +204,7 @@ export function QuarterBars({ bars }: { bars: QuarterBar[] }) {
                 x={x + barW / 2}
                 y={bar.value >= 0 ? y - 6 : y + h + 14}
                 textAnchor="middle"
-                className="fill-white/80"
-                style={{ fontSize: 11 }}
+                style={{ fill: "var(--ink-2)", fontSize: 11 }}
               >
                 {formatCurrency(Math.abs(bar.value))}
               </text>
@@ -211,8 +212,7 @@ export function QuarterBars({ bars }: { bars: QuarterBar[] }) {
                 x={x + barW / 2}
                 y={bar.sub2 ? height - 16 : height - 4}
                 textAnchor="middle"
-                className="fill-white/50"
-                style={{ fontSize: 11 }}
+                style={{ fill: "var(--ink-3)", fontSize: 11 }}
               >
                 {bar.label}
               </text>
@@ -221,8 +221,7 @@ export function QuarterBars({ bars }: { bars: QuarterBar[] }) {
                   x={x + barW / 2}
                   y={height - 4}
                   textAnchor="middle"
-                  className="fill-white/35"
-                  style={{ fontSize: 9 }}
+                  style={{ fill: "var(--ink-3)", opacity: 0.75, fontSize: 9 }}
                 >
                   {bar.sub2}
                 </text>
@@ -291,14 +290,14 @@ export function ProjectionChart({
         {ticks.map((tick) => (
           <g key={tick}>
             <line x1={padL} x2={width - padR} y1={y(tick)} y2={y(tick)} stroke={GRID} strokeWidth={1} />
-            <text x={padL - 8} y={y(tick) + 4} textAnchor="end" className="fill-white/40" style={{ fontSize: 10 }}>
+            <text x={padL - 8} y={y(tick) + 4} textAnchor="end" style={{ fill: "var(--ink-3)", fontSize: 10 }}>
               €{Math.round(tick / 1000)}k
             </text>
           </g>
         ))}
 
         {months.map((month, index) => (
-          <text key={month} x={x(index)} y={height - 8} textAnchor="middle" className="fill-white/40" style={{ fontSize: 10 }}>
+          <text key={month} x={x(index)} y={height - 8} textAnchor="middle" style={{ fill: "var(--ink-3)", fontSize: 10 }}>
             {month}
           </text>
         ))}
@@ -310,7 +309,7 @@ export function ProjectionChart({
             y={padT}
             width={x(months.length - 1) - x(actualThrough)}
             height={plotH}
-            fill="rgba(255,255,255,0.03)"
+            fill="var(--surface-sunken)"
           />
         )}
 
@@ -332,7 +331,7 @@ export function ProjectionChart({
 
         {hover !== null && (
           <g>
-            <line x1={x(hover)} x2={x(hover)} y1={padT} y2={padT + plotH} stroke="rgba(255,255,255,0.25)" strokeWidth={1} />
+            <line x1={x(hover)} x2={x(hover)} y1={padT} y2={padT + plotH} stroke="var(--ink-3)" strokeWidth={1} />
             {series.map((s) => (
               <circle key={s.label} cx={x(hover)} cy={y(s.values[hover])} r={5} fill={s.color} stroke={SURFACE} strokeWidth={2} />
             ))}
@@ -342,14 +341,14 @@ export function ProjectionChart({
 
       {hover !== null && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-xl border border-white/15 bg-[#0b1020] px-3 py-2 text-xs shadow-xl"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 card px-3 py-2 text-xs"
           style={{ left: `${(x(hover) / width) * 100}%`, top: 0 }}
         >
-          <div className="font-medium text-white">
+          <div className="font-medium">
             {months[hover]} {hover > actualThrough ? '(projected)' : ''}
           </div>
           {series.map((s) => (
-            <div key={s.label} className="mt-0.5 flex items-center gap-2 text-white/80">
+            <div key={s.label} className="mt-0.5 flex items-center gap-2 muted">
               <span className="h-2 w-2 rounded-sm" style={{ background: s.color }} />
               {s.label}: <span className="tabular-nums">{formatCurrency(s.values[hover])}</span>
             </div>
@@ -357,14 +356,14 @@ export function ProjectionChart({
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-4 text-sm text-white/70">
+      <div className="mt-3 flex flex-wrap gap-4 text-sm muted">
         {series.map((s) => (
           <span key={s.label} className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-sm" style={{ background: s.color }} />
             {s.label}
           </span>
         ))}
-        <span className="flex items-center gap-2 text-white/50">
+        <span className="flex items-center gap-2 faint">
           <svg width="22" height="8" aria-hidden>
             <line x1="0" y1="4" x2="22" y2="4" stroke={AXIS} strokeWidth={2} strokeDasharray="5 4" />
           </svg>

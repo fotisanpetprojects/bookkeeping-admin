@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
 import { quarterMonths, useT } from '@/lib/i18n';
 import { describeDeadline, getBtwDeadline, toLocalIsoDate } from '@/lib/tax';
@@ -171,25 +170,21 @@ export default function BtwSummaryPage() {
 
   return (
     <main className="space-y-6">
-      <Link href="/" className="inline-block rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10">
-        {t('common.back')}
-      </Link>
-
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-semibold">{t('vat.title')}</h1>
-          <p className="mt-2 text-sm text-white/60">{t('vat.subtitle')}</p>
+          <p className="mt-2 text-sm muted">{t('vat.subtitle')}</p>
         </div>
 
-        <label className="text-sm text-white/60">
+        <label className="text-sm muted">
           <span className="mb-2 block">{t('common.year')}</span>
           <select
-            className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white outline-none"
+            className="field"
             value={activeYear}
             onChange={(event) => setSelectedYear(Number(event.target.value))}
           >
             {years.map((year) => (
-              <option key={year} value={year} className="text-black">
+              <option key={year} value={year} style={{ color: "var(--ink)", background: "var(--surface)" }}>
                 {year}
               </option>
             ))}
@@ -197,15 +192,15 @@ export default function BtwSummaryPage() {
         </label>
       </div>
 
-      <div className="rounded-3xl border border-cyan-400/30 bg-cyan-400/10 p-6">
-        <div className="text-sm uppercase tracking-[0.14em] text-cyan-200">{t('vat.stillToPay')}</div>
+      <div className="card-accent p-6">
+        <div className="text-sm uppercase tracking-[0.14em] text-[var(--accent)]">{t('vat.stillToPay')}</div>
         <div className="mt-2 text-4xl font-semibold">{formatCurrency(Math.abs(outstandingVat))}</div>
-        <div className="mt-3 text-sm text-white/70">
+        <div className="mt-3 text-sm muted">
           {unsettledQuarters.length === 0
             ? t('vat.allSettled')
             : `${t('vat.stillToPayHint')} ${unsettledQuarters.join(', ')}`}
         </div>
-        <div className="mt-2 text-xs text-white/45">
+        <div className="mt-2 text-xs faint">
           {t('vat.grossHint', {
             gross: formatCurrency(Math.abs(totals.netVat)),
             year: String(activeYear),
@@ -214,7 +209,7 @@ export default function BtwSummaryPage() {
       </div>
 
       {(undatedInvoices > 0 || undatedExpenses > 0) && (
-        <div className="rounded-3xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-100">
+        <div className="card p-4 text-sm text-[var(--bad)]">
           {t('vat.excluded')}{' '}
           {undatedInvoices > 0 && `${undatedInvoices} invoice(s)`}
           {undatedInvoices > 0 && undatedExpenses > 0 && ', '}
@@ -223,12 +218,12 @@ export default function BtwSummaryPage() {
       )}
 
       {error && (
-        <div className="rounded-3xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-200">{error}</div>
+        <div className="card p-4 text-sm text-[var(--bad)]">{error}</div>
       )}
 
       <div className="space-y-4">
         {visibleSummaries.length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">{t('vat.noData')}</div>
+          <div className="card p-6 muted">{t('vat.noData')}</div>
         ) : (
           visibleSummaries.map((summary) => {
             const isSettled = settledQuarters.includes(summary.key);
@@ -238,26 +233,26 @@ export default function BtwSummaryPage() {
             return (
               <div
                 key={summary.key}
-                className={`rounded-3xl border p-6 ${
-                  isSettled ? 'border-emerald-400/25 bg-emerald-400/5' : 'border-white/10 bg-white/5'
+                className={`card p-6 ${
+                  isSettled ? 'border-[var(--good)] bg-[var(--good-soft)]' : ''
                 }`}
               >
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="text-xl font-semibold">
                       {summary.year} Q{summary.quarter}
-                      <span className="ml-2 text-base font-normal text-white/55">
+                      <span className="ml-2 text-base font-normal faint">
                         {quarterMonths(summary.quarter, language)}
                       </span>
                     </h2>
-                    <div className="mt-1 text-sm text-white/50">
+                    <div className="mt-1 text-sm faint">
                       {summary.invoiceCount} invoice(s) · {summary.expenseCount} expense(s) ·{' '}
                       {t('vat.deadline')} {formatDate(toLocalIsoDate(deadline))}
                       {!isSettled && summary.netVat !== 0 && ` (${deadlineInfo.label})`}
                     </div>
                   </div>
 
-                  <label className="flex cursor-pointer items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10">
+                  <label className="flex cursor-pointer items-center gap-2 btn">
                     <input
                       type="checkbox"
                       checked={isSettled}
@@ -268,30 +263,30 @@ export default function BtwSummaryPage() {
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-4">
-                  <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                    <div className="text-sm text-white/50">{t('common.exVat')}</div>
+                  <div className="panel p-4">
+                    <div className="text-sm faint">{t('common.exVat')}</div>
                     <div className="mt-2 text-xl font-semibold">{formatCurrency(summary.revenueExVat)}</div>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                    <div className="text-sm text-white/50">{t('vat.chargedShort')}</div>
+                  <div className="panel p-4">
+                    <div className="text-sm faint">{t('vat.chargedShort')}</div>
                     <div className="mt-2 text-xl font-semibold">{formatCurrency(summary.outputVat)}</div>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                    <div className="text-sm text-white/50">{t('vat.expensesExVat')}</div>
+                  <div className="panel p-4">
+                    <div className="text-sm faint">{t('vat.expensesExVat')}</div>
                     <div className="mt-2 text-xl font-semibold">{formatCurrency(summary.expensesExVat)}</div>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                    <div className="text-sm text-white/50">{t('vat.deductibleShort')}</div>
+                  <div className="panel p-4">
+                    <div className="text-sm faint">{t('vat.deductibleShort')}</div>
                     <div className="mt-2 text-xl font-semibold">{formatCurrency(summary.inputVat)}</div>
                   </div>
                 </div>
 
-                <div className="mt-3 rounded-2xl border border-white/10 bg-black/25 p-4">
-                  <div className="text-sm text-white/50">
+                <div className="mt-3 panel p-4">
+                  <div className="text-sm faint">
                     {summary.netVat >= 0 ? t('vat.netToPay') : t('vat.netToReclaim')}
                     {isSettled && ` · ${t('common.settled')}`}
                   </div>
-                  <div className={`mt-2 text-2xl font-semibold ${isSettled ? 'text-white/50 line-through' : ''}`}>
+                  <div className={`mt-2 text-2xl font-semibold ${isSettled ? 'faint line-through' : ''}`}>
                     {formatCurrency(Math.abs(summary.netVat))}
                   </div>
                 </div>
@@ -301,7 +296,7 @@ export default function BtwSummaryPage() {
         )}
       </div>
 
-      <p className="text-xs text-white/40">{t('vat.disclaimer')}</p>
+      <p className="text-xs faint">{t('vat.disclaimer')}</p>
     </main>
   );
 }

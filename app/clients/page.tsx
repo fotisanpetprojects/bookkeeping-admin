@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { ChangeEvent, useState } from 'react';
 import { useLocalStorageState } from '@/lib/local-storage';
 import {
@@ -23,31 +22,31 @@ function SavedBusinessProfilesPanel({
   onRemove: (id: number) => void;
 }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+    <div className="card p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-semibold">Saved Business Profiles</h2>
-        <p className="mt-2 text-sm text-white/60">
+        <p className="mt-2 text-sm muted">
           Save multiple sender profiles and reuse them on invoices.
         </p>
       </div>
 
       <div className="space-y-4">
         {profiles.length === 0 ? (
-          <div className="rounded-[2rem] border border-white/10 bg-black/20 p-5 text-sm text-white/60">
+          <div className="panel p-5 text-sm muted">
             No business profiles saved yet.
           </div>
         ) : (
           profiles.map((profile) => (
             <div
               key={profile.id}
-              className="rounded-[2rem] border border-white/10 bg-black/20 p-5"
+              className="panel p-5"
             >
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <div className="text-xl font-semibold text-white">
+                  <div className="text-xl font-semibold">
                     {profile.businessName}
                   </div>
-                  <div className="mt-2 text-sm text-white/65">
+                  <div className="mt-2 text-sm muted">
                     {profile.contactName || '—'}
                   </div>
                 </div>
@@ -56,13 +55,13 @@ function SavedBusinessProfilesPanel({
                   <div className="flex gap-2">
                     <button
                       onClick={() => onEdit(profile)}
-                      className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                      className="btn"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => onRemove(profile.id)}
-                      className="rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-red-200 hover:bg-red-400/20"
+                      className="rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-[var(--bad)] hover:bg-red-400/20"
                     >
                       Remove
                     </button>
@@ -83,7 +82,7 @@ function SavedBusinessProfilesPanel({
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-2 text-sm text-white/75">
+              <div className="mt-4 grid gap-2 text-sm muted">
                 <div>{profile.streetAddress || '—'}</div>
                 <div>{profile.postalCodeCity || '—'}</div>
                 <div>KvK: {profile.kvkNumber || '—'}</div>
@@ -110,52 +109,52 @@ function SavedClientProfilesPanel({
   onRemove: (id: number) => void;
 }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+    <div className="card p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-semibold">Saved Client Profiles</h2>
-        <p className="mt-2 text-sm text-white/60">
+        <p className="mt-2 text-sm muted">
           Reuse client invoice details without typing them every time.
         </p>
       </div>
 
       <div className="space-y-4">
         {profiles.length === 0 ? (
-          <div className="rounded-[2rem] border border-white/10 bg-black/20 p-5 text-sm text-white/60">
+          <div className="panel p-5 text-sm muted">
             No client profiles yet.
           </div>
         ) : (
           profiles.map((profile) => (
             <div
               key={profile.id}
-              className="rounded-[2rem] border border-white/10 bg-black/20 p-5"
+              className="panel p-5"
             >
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <div className="text-xl font-semibold text-white">
+                  <div className="text-xl font-semibold">
                     {profile.companyName}
                   </div>
                   {profile.attentionName && (
-                    <div className="mt-2 text-sm text-white/60">{profile.attentionName}</div>
+                    <div className="mt-2 text-sm muted">{profile.attentionName}</div>
                   )}
                 </div>
 
                 <div className="flex gap-2">
                   <button
                     onClick={() => onEdit(profile)}
-                    className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                    className="btn"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => onRemove(profile.id)}
-                    className="rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-red-200 hover:bg-red-400/20"
+                    className="rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-[var(--bad)] hover:bg-red-400/20"
                   >
                     Remove
                   </button>
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-2 text-sm text-white/75">
+              <div className="mt-4 grid gap-2 text-sm muted">
                 <div>{profile.streetAddress}</div>
                 <div>{profile.postalCodeCity}</div>
                 <div>KvK: {profile.kvkNumber || '—'}</div>
@@ -372,40 +371,34 @@ export default function ClientsPage() {
 
   return (
     <main className="space-y-6">
-      <Link
-        href="/"
-        className="inline-block rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-      >
-        ← Back
-      </Link>
 
       <div>
         <h1 className="text-3xl font-semibold">Billing Profiles</h1>
-        <p className="mt-2 max-w-3xl text-sm text-white/65">
+        <p className="mt-2 max-w-3xl text-sm muted">
           Save your own invoice details once, create reusable client profiles, and use them on the invoice page.
         </p>
       </div>
 
       <section className="grid gap-6 xl:grid-cols-2">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <div className="card p-6">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-2xl font-semibold">Your Business Profile</h2>
-              <p className="mt-2 text-sm text-white/60">
-                This becomes the <span className="font-medium text-white">From</span> block on each invoice.
+              <p className="mt-2 text-sm muted">
+                This becomes the <span className="font-medium">From</span> block on each invoice.
               </p>
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={emptyBusinessFields}
-                className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                className="btn"
               >
                 Empty fields
               </button>
               <button
                 onClick={saveBusinessProfile}
-                className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-black hover:opacity-90"
+                className="btn btn-primary"
               >
                 Save profile
               </button>
@@ -414,9 +407,9 @@ export default function ClientsPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Business name</span>
+              <span className="text-sm muted">Business name</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="Northwind Advisory"
                 value={businessDraft.businessName}
                 onChange={(e) => updateBusinessField('businessName', e.target.value)}
@@ -424,9 +417,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Contact name</span>
+              <span className="text-sm muted">Contact name</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="Alex Example"
                 value={businessDraft.contactName}
                 onChange={(e) => updateBusinessField('contactName', e.target.value)}
@@ -434,9 +427,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Street and number</span>
+              <span className="text-sm muted">Street and number</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="Keizersgracht 100"
                 value={businessDraft.streetAddress}
                 onChange={(e) => updateBusinessField('streetAddress', e.target.value)}
@@ -444,9 +437,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Postal code and city</span>
+              <span className="text-sm muted">Postal code and city</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="1015 CV Amsterdam"
                 value={businessDraft.postalCodeCity}
                 onChange={(e) => updateBusinessField('postalCodeCity', e.target.value)}
@@ -454,9 +447,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">KvK number</span>
+              <span className="text-sm muted">KvK number</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="12345678"
                 value={businessDraft.kvkNumber}
                 onChange={(e) => updateBusinessField('kvkNumber', e.target.value)}
@@ -464,9 +457,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">BTW number</span>
+              <span className="text-sm muted">BTW number</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="NL001234567B01"
                 value={businessDraft.vatNumber}
                 onChange={(e) => updateBusinessField('vatNumber', e.target.value)}
@@ -474,9 +467,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">IBAN</span>
+              <span className="text-sm muted">IBAN</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="NL91ABNA0417164300"
                 value={businessDraft.iban}
                 onChange={(e) => updateBusinessField('iban', e.target.value)}
@@ -484,9 +477,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Bank name</span>
+              <span className="text-sm muted">Bank name</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="Example Bank"
                 value={businessDraft.bankName}
                 onChange={(e) => updateBusinessField('bankName', e.target.value)}
@@ -494,9 +487,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2 md:max-w-[15rem]">
-              <span className="text-sm text-white/70">Default payment terms (days)</span>
+              <span className="text-sm muted">Default payment terms (days)</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 type="number"
                 min="1"
                 placeholder="30"
@@ -506,21 +499,21 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Logo / letterhead</span>
+              <span className="text-sm muted">Logo / letterhead</span>
               <input
                 key={businessLogoInputKey}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white file:mr-4 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-medium file:text-black"
+                className="field file:mr-3 file:rounded-[7px] file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-[var(--accent-ink)]"
                 type="file"
                 accept="image/png,image/jpeg"
                 onChange={handleBusinessLogoUpload}
               />
-              <p className="text-xs text-white/45">
+              <p className="text-xs faint">
                 PNG, JPG, or JPEG. Maximum size: 300 KB.
               </p>
             </label>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-start justify-between gap-4 text-sm text-white/55">
+          <div className="mt-5 flex flex-wrap items-start justify-between gap-4 text-sm faint">
             <div>
               {editingBusinessId ? 'Editing a saved business profile.' : 'Creating a new business profile.'}
             </div>
@@ -537,12 +530,12 @@ export default function ClientsPage() {
                   />
                 </div>
               )}
-              {businessNotice && <div className="text-emerald-200">{businessNotice}</div>}
+              {businessNotice && <div className="text-[var(--good)]">{businessNotice}</div>}
             </div>
           </div>
 
           {businessError && (
-            <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">
+            <div className="mt-4 panel p-3 text-sm text-[var(--bad)]">
               {businessError}
             </div>
           )}
@@ -556,13 +549,13 @@ export default function ClientsPage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-2">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <div className="card p-6">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-2xl font-semibold">
                 {editingClientId ? 'Edit Client Profile' : 'New Client Profile'}
               </h2>
-              <p className="mt-2 text-sm text-white/60">
+              <p className="mt-2 text-sm muted">
                 Save reusable invoice details for each client so the To block is prefilled.
               </p>
             </div>
@@ -570,13 +563,13 @@ export default function ClientsPage() {
             <div className="flex gap-2">
               <button
                 onClick={emptyClientFields}
-                className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                className="btn"
               >
                 Empty fields
               </button>
               <button
                 onClick={saveClientProfile}
-                className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-black hover:opacity-90"
+                className="btn btn-primary"
               >
                 Save profile
               </button>
@@ -585,9 +578,9 @@ export default function ClientsPage() {
 
           <div className="grid gap-4">
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Company name</span>
+              <span className="text-sm muted">Company name</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="Acme Studio B.V."
                 value={clientForm.companyName}
                 onChange={(e) => updateClientField('companyName', e.target.value)}
@@ -595,9 +588,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Attention / contact person</span>
+              <span className="text-sm muted">Attention / contact person</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="Taylor Example"
                 value={clientForm.attentionName}
                 onChange={(e) => updateClientField('attentionName', e.target.value)}
@@ -605,9 +598,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Street and number</span>
+              <span className="text-sm muted">Street and number</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="Stationsplein 45"
                 value={clientForm.streetAddress}
                 onChange={(e) => updateClientField('streetAddress', e.target.value)}
@@ -615,9 +608,9 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm text-white/70">Postal code and city</span>
+              <span className="text-sm muted">Postal code and city</span>
               <input
-                className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                className="field"
                 placeholder="3013 AK Rotterdam"
                 value={clientForm.postalCodeCity}
                 onChange={(e) => updateClientField('postalCodeCity', e.target.value)}
@@ -626,9 +619,9 @@ export default function ClientsPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-sm text-white/70">KvK number</span>
+                <span className="text-sm muted">KvK number</span>
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                  className="field"
                   placeholder="87654321"
                   value={clientForm.kvkNumber}
                   onChange={(e) => updateClientField('kvkNumber', e.target.value)}
@@ -636,9 +629,9 @@ export default function ClientsPage() {
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm text-white/70">BTW number</span>
+                <span className="text-sm muted">BTW number</span>
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 p-3 text-white placeholder-white/35 outline-none"
+                  className="field"
                   placeholder="NL008765432B01"
                   value={clientForm.vatNumber}
                   onChange={(e) => updateClientField('vatNumber', e.target.value)}
@@ -647,7 +640,7 @@ export default function ClientsPage() {
             </div>
 
             {error && (
-              <div className="rounded-2xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">
+              <div className="panel p-3 text-sm text-[var(--bad)]">
                 {error}
               </div>
             )}

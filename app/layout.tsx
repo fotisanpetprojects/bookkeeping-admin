@@ -16,10 +16,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-[#0b1020] text-white">
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top,#1b2a52_0%,#0b1020_45%,#070b16_100%)]">
+      <body className="min-h-screen">
+        <div className="min-h-screen">
           <SeedLoader />
-          <header className="border-b border-white/10 backdrop-blur">
+          <header className="app-header sticky top-0 z-20">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
               <Link href="/" className="text-xl font-semibold tracking-tight">
                 Bookkeeping Admin

@@ -18,7 +18,7 @@ export const LANGUAGES: { code: Language; label: string }[] = [
 type Entry = { en: string; nl: string };
 
 export const STRINGS = {
-  'nav.dashboard': { en: 'Dashboard', nl: 'Dashboard' },
+  'nav.home': { en: 'Home', nl: 'Home' },
   'nav.invoices': { en: 'Invoices', nl: 'Facturen' },
   'nav.profiles': { en: 'Profiles', nl: 'Profielen' },
   'nav.expenses': { en: 'Expenses', nl: 'Uitgaven' },

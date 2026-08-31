@@ -1,26 +1,233 @@
 @import "tailwindcss";
 
+/*
+ * Light is the default and dark follows the OS. Every colour is a token so the
+ * two modes swap in one place; nothing below hard-codes a colour.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  color-scheme: light;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #f4f4f6;
+  --bg-accent: #eceef3;
+  --surface: #ffffff;
+  --surface-2: #fafafb;
+  --surface-sunken: #f3f4f7;
+
+  --ink: #14151c;
+  --ink-2: #4d5060;
+  --ink-3: #82869a;
+
+  --line: rgba(20, 21, 28, 0.10);
+  --line-strong: rgba(20, 21, 28, 0.16);
+
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(42, 120, 214, 0.10);
+  --accent-line: rgba(42, 120, 214, 0.35);
+
+  --good: #0a7f43;
+  --good-soft: rgba(10, 127, 67, 0.10);
+  --warn: #9a6100;
+  --warn-soft: rgba(154, 97, 0, 0.10);
+  --bad: #bb2d2d;
+  --bad-soft: rgba(187, 45, 45, 0.09);
+
+  /* Chart series — validated against this surface for CVD and contrast. */
+  --series-1: #2a78d6;
+  --series-2: #1baf7a;
+  --series-3: #eb6834;
+  --chart-surface: #ffffff;
+  --grid: rgba(20, 21, 28, 0.09);
+
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-hover: rgba(255, 255, 255, 0.85);
+  --glass-line: rgba(255, 255, 255, 0.7);
+
+  --shadow-float: 0 1px 2px rgba(16, 18, 28, 0.05), 0 10px 28px -12px rgba(16, 18, 28, 0.18);
+  --shadow-raised: 0 1px 2px rgba(16, 18, 28, 0.06), 0 20px 48px -20px rgba(16, 18, 28, 0.28);
+
+  --radius: 12px;
+  --radius-sm: 9px;
+  --radius-lg: 16px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+
+    --bg: #0c0d11;
+    --bg-accent: #121319;
+    --surface: #16181f;
+    --surface-2: #1b1e26;
+    --surface-sunken: #101218;
+
+    --ink: #f2f3f7;
+    --ink-2: #a9adbd;
+    --ink-3: #7c8091;
+
+    --line: rgba(255, 255, 255, 0.09);
+    --line-strong: rgba(255, 255, 255, 0.16);
+
+    --accent: #4a90e8;
+    --accent-ink: #07101d;
+    --accent-soft: rgba(74, 144, 232, 0.14);
+    --accent-line: rgba(74, 144, 232, 0.40);
+
+    --good: #3ecf7f;
+    --good-soft: rgba(62, 207, 127, 0.12);
+    --warn: #e0a92c;
+    --warn-soft: rgba(224, 169, 44, 0.12);
+    --bad: #f0716f;
+    --bad-soft: rgba(240, 113, 111, 0.12);
+
+    --series-1: #3987e5;
+    --series-2: #199e70;
+    --series-3: #d95926;
+    --chart-surface: #16181f;
+    --grid: rgba(255, 255, 255, 0.08);
+
+    --glass: rgba(32, 35, 44, 0.55);
+    --glass-hover: rgba(44, 48, 60, 0.75);
+    --glass-line: rgba(255, 255, 255, 0.10);
+
+    --shadow-float: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.45), 0 24px 56px -22px rgba(0, 0, 0, 0.8);
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A block of content that floats above the page rather than sitting in a box. */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-float);
+}
+
+.card-raised {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+/* Nested panel: recedes instead of floating, so cards don't nest shadows. */
+.panel {
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.card-accent {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-float);
+}
+
+/* Controls are glass: translucent, blurred, with a light-catching top edge. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  color: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  box-shadow: inset 0 1px 0 var(--glass-line), 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+  cursor: pointer;
+}
+
+.btn:hover { background: var(--glass-hover); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+  font-weight: 500;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.btn-primary:hover { background: var(--accent); filter: brightness(1.06); }
+
+.btn-danger { color: var(--bad); border-color: var(--bad-soft); }
+.btn-danger:hover { background: var(--bad-soft); }
+
+.btn-icon { padding: 0.4rem; width: 2rem; height: 2rem; }
+
+.field {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 0.9rem;
+  outline: none;
+}
+.field:focus { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+.muted { color: var(--ink-2); }
+.faint { color: var(--ink-3); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid var(--line);
+}
+.chip-good { color: var(--good); background: var(--good-soft); border-color: transparent; }
+.chip-warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.chip-bad { color: var(--bad); background: var(--bad-soft); border-color: transparent; }
+
+/* Header bar floats over content while scrolling. */
+.app-header {
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--line);
+}
+
+.data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.data-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink-3);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+.data-table tbody tr:hover { background: var(--surface-sunken); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.sortable { cursor: pointer; user-select: none; }
+.sortable:hover { color: var(--ink); }
+
+@media print {
+  .no-print { display: none !important; }
 }
