@@ -1,6 +1,7 @@
 import './globals.css';
 import Link from 'next/link';
 import NavTabs from '@/app/components/NavTabs';
+import ThemeToggle from '@/app/components/ThemeToggle';
 import SeedLoader from '@/app/components/SeedLoader';
 import type { Metadata } from 'next';
 
@@ -27,7 +28,7 @@ export default function RootLayout({
       <body className="min-h-screen">
         <div className="min-h-screen">
           <SeedLoader />
-          <header className="app-header sticky top-0 z-20">
+          <header className="app-header">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
               <Link href="/" className="text-xl font-semibold tracking-tight">
                 Bookkeeping Admin
@@ -38,6 +39,8 @@ export default function RootLayout({
           </header>
 
           <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+
+          <ThemeToggle className="theme-dock" />
         </div>
       </body>
     </html>

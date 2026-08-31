@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { formatCurrency } from '@/lib/billing';
+import { useT } from '@/lib/i18n';
 
 /**
  * Categorical slots, dark-mode steps, validated against this app's card surface
@@ -57,13 +58,14 @@ export function Donut({ slices, centerLabel, centerValue }: {
   centerValue: string;
 }) {
   const [tip, setTip] = useState<Tip>(null);
+  const { t } = useT();
   const positive = slices.filter((slice) => slice.value > 0);
   const total = positive.reduce((sum, slice) => sum + slice.value, 0);
 
   if (total <= 0) {
     return (
       <div className="flex h-[220px] items-center justify-center text-sm faint">
-        Nothing to show yet for this year.
+        {t('chart.nothingYear')}
       </div>
     );
   }
@@ -149,9 +151,10 @@ export type QuarterBar = { label: string; value: number; sub?: string; sub2?: st
 
 export function QuarterBars({ bars }: { bars: QuarterBar[] }) {
   const [tip, setTip] = useState<Tip>(null);
+  const { t } = useT();
 
   if (bars.length === 0) {
-    return <div className="py-10 text-center text-sm faint">No quarters yet.</div>;
+    return <div className="py-10 text-center text-sm faint">{t('chart.noQuarters')}</div>;
   }
 
   const width = 560;
@@ -250,6 +253,7 @@ export function ProjectionChart({
   actualThrough: number;
 }) {
   const [hover, setHover] = useState<number | null>(null);
+  const { t } = useT();
 
   const width = 720;
   const height = 260;
@@ -345,7 +349,7 @@ export function ProjectionChart({
           style={{ left: `${(x(hover) / width) * 100}%`, top: 0 }}
         >
           <div className="font-medium">
-            {months[hover]} {hover > actualThrough ? '(projected)' : ''}
+            {months[hover]} {hover > actualThrough ? `(${t('bd.projected').toLowerCase()})` : ''}
           </div>
           {series.map((s) => (
             <div key={s.label} className="mt-0.5 flex items-center gap-2 muted">
@@ -367,7 +371,7 @@ export function ProjectionChart({
           <svg width="22" height="8" aria-hidden>
             <line x1="0" y1="4" x2="22" y2="4" stroke={AXIS} strokeWidth={2} strokeDasharray="5 4" />
           </svg>
-          Projected
+          {t('bd.projected')}
         </span>
       </div>
     </div>

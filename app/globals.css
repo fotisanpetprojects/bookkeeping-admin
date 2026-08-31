@@ -276,3 +276,29 @@ body {
 @media print {
   .no-print { display: none !important; }
 }
+
+/* The totals row closes the table: a tinted band, heavier rule, no hover. */
+.data-table tfoot .totals-row td {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 9%, var(--surface)),
+    color-mix(in srgb, var(--accent) 4%, var(--surface))
+  );
+  border-top: 2px solid var(--accent-line);
+  border-bottom: none;
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
+  color: var(--ink);
+}
+.data-table tfoot .totals-row td:first-child { border-bottom-left-radius: var(--radius); }
+.data-table tfoot .totals-row td:last-child { border-bottom-right-radius: var(--radius); }
+.data-table tfoot tr:hover td { background: inherit; }
+
+/* Floating theme control, bottom right, clear of page content. */
+.theme-dock {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 40;
+  box-shadow: var(--shadow-raised);
+}

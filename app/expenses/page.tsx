@@ -294,7 +294,7 @@ export default function ExpensesPage() {
         <div>
           <h1 className="text-3xl font-semibold">{t('exp.title')}</h1>
           <p className="mt-2 text-sm muted">
-            Allowed date range: {minDate} to {today}
+            {t('exp.dateRange', { min: minDate, max: today })}
           </p>
         </div>
 
@@ -346,7 +346,7 @@ export default function ExpensesPage() {
       <div className="card p-6">
         {editingId !== null && (
           <div className="mb-4 panel p-3 text-sm text-[var(--accent)]">
-            Editing an existing expense. Saving overwrites it.
+            {t('exp.editingNotice')}
           </div>
         )}
 
@@ -362,14 +362,14 @@ export default function ExpensesPage() {
 
           <input
             className="field"
-            placeholder="Supplier"
+            placeholder={t('exp.supplier')}
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
           />
 
           <input
             className="field"
-            placeholder="Category"
+            placeholder={t('exp.category')}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           />
@@ -379,7 +379,7 @@ export default function ExpensesPage() {
             type="number"
             step="0.01"
             min="0"
-            placeholder="Amount ex VAT"
+            placeholder={t('exp.amountExVat')}
             value={amountExVat}
             onChange={(e) => setAmountExVat(e.target.value)}
           />
@@ -440,7 +440,7 @@ export default function ExpensesPage() {
               onClick={saveExpense}
               className="btn btn-primary"
             >
-              {editingId !== null ? 'Save changes' : 'Add Expense'}
+              {editingId !== null ? t('exp.saveChanges') : t('exp.addExpense')}
             </button>
 
             {editingId !== null && (
@@ -448,7 +448,7 @@ export default function ExpensesPage() {
                 onClick={resetForm}
                 className="btn"
               >
-                Cancel edit
+                {t('exp.cancelEdit')}
               </button>
             )}
           </div>
@@ -499,7 +499,7 @@ export default function ExpensesPage() {
                   download={expense.receiptName || 'receipt'}
                   className="text-sm text-[var(--accent)] underline"
                 >
-                  Download receipt
+                  {t('exp.downloadReceipt')}
                 </a>
               )}
             </div>

@@ -661,21 +661,21 @@ export default function InvoicesPage() {
               <div>
                 <h2 className="text-2xl font-semibold">{t('cl.title')}</h2>
                 <p className="mt-2 text-sm muted">
-                  Select a saved business profile and a saved client profile.
+                  {t('inv.selectBoth')}
                 </p>
               </div>
               <Link
                 href="/clients"
                 className="btn"
               >
-                Edit profiles
+                {t('inv.editProfiles')}
               </Link>
             </div>
 
             <div className="grid gap-4">
               {businessProfiles.length > 0 && (
                 <label className="space-y-2">
-                  <span className="text-sm muted">Business profile</span>
+                  <span className="text-sm muted">{t('inv.businessProfile')}</span>
                   <select
                     className="field"
                     value={resolvedBusinessProfileId}
@@ -714,7 +714,7 @@ export default function InvoicesPage() {
                   }}
                 >
                   <option value="" style={{ color: "var(--ink)", background: "var(--surface)" }}>
-                    Select a saved client profile
+                    {t('inv.selectClient')}
                   </option>
                   {clientProfiles.map((profile) => (
                     <option key={profile.id} value={profile.id} style={{ color: "var(--ink)", background: "var(--surface)" }}>
@@ -756,7 +756,7 @@ export default function InvoicesPage() {
                   }}
                 />
                 <p className="text-xs faint">
-                  This is the date printed on the invoice document.
+                  {t('inv.dateHint')}
                 </p>
               </label>
 
@@ -789,7 +789,7 @@ export default function InvoicesPage() {
                   }}
                 />
                 <p className="text-xs faint">
-                  Due date will be calculated automatically.
+                  {t('inv.dueHint')}
                 </p>
               </label>
             </div>
@@ -865,7 +865,7 @@ export default function InvoicesPage() {
 
               {vatSelection === 'custom' && (
                 <label className="max-w-[14rem] space-y-2">
-                  <span className="text-sm muted">Custom VAT %</span>
+                  <span className="text-sm muted">{t('inv.customVat')}</span>
                   <input
                     className="field"
                     type="number"
@@ -986,7 +986,7 @@ export default function InvoicesPage() {
                   </div>
                 ) : (
                   <div className="text-sm text-slate-500">
-                    Select a saved client profile to fill this section.
+                    {t('inv.fillClient')}
                   </div>
                 )}
               </div>
@@ -1046,14 +1046,12 @@ export default function InvoicesPage() {
 
           {!isBusinessProfileComplete(businessProfile) && (
             <div className="no-print card border-[var(--warn)] bg-[var(--warn-soft)] p-5 text-sm text-[var(--warn)]">
-              Your business profile is not complete yet. Add your invoice details on the Profiles page before saving invoices.
+              {t('inv.profileIncomplete')}
             </div>
           )}
 
           {clientProfiles.length === 0 && (
-            <div className="no-print card border-[var(--warn)] bg-[var(--warn-soft)] p-5 text-sm text-[var(--warn)]">
-              No client profiles saved yet. Add one on the Profiles page so the invoice To section can be filled automatically.
-            </div>
+            <div className="no-print card border-[var(--warn)] bg-[var(--warn-soft)] p-5 text-sm text-[var(--warn)]">{t('inv.noClientProfiles')}</div>
           )}
         </div>
       </section>

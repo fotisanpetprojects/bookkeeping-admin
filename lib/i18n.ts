@@ -213,6 +213,120 @@ export const STRINGS = {
   'cl.noBusiness': { en: 'No business profiles saved yet.', nl: 'Nog geen bedrijfsprofielen opgeslagen.' },
   'cl.noClients': { en: 'No client profiles saved yet.', nl: 'Nog geen klantprofielen opgeslagen.' },
 
+
+  'home.eyebrow': { en: 'Bookkeeping Admin', nl: 'Bookkeeping Admin' },
+  'home.headline': {
+    en: 'Keep your invoices, receipts and quarterly BTW under control.',
+    nl: 'Houd je facturen, bonnen en kwartaal-BTW onder controle.',
+  },
+  'home.intro': {
+    en: 'A simple admin tool for independent professionals to track billing profiles, invoices, expenses, receipts and VAT without spreadsheet chaos.',
+    nl: 'Een eenvoudige tool voor zelfstandigen om profielen, facturen, uitgaven, bonnen en BTW bij te houden zonder spreadsheet-chaos.',
+  },
+  'home.createInvoice': { en: 'Create invoice', nl: 'Factuur maken' },
+  'home.addExpense': { en: 'Add expense', nl: 'Uitgave toevoegen' },
+  'home.seeTaxYear': { en: 'See the tax year', nl: 'Bekijk het belastingjaar' },
+  'home.cardInvoices': { en: 'Create invoices and calculate VAT totals instantly.', nl: 'Maak facturen en bereken direct de BTW-totalen.' },
+  'home.cardProfiles': { en: 'Save your business details and reusable client invoice data.', nl: 'Bewaar je bedrijfsgegevens en herbruikbare klantgegevens.' },
+  'home.cardExpenses': { en: 'Log receipts, VAT rates and business costs.', nl: 'Leg bonnen, BTW-tarieven en zakelijke kosten vast.' },
+  'home.cardVat': { en: 'Net VAT per quarter, and what is still to pay.', nl: 'Netto BTW per kwartaal, en wat er nog te betalen is.' },
+  'home.cardBelasting': { en: 'The tax year in full: receivables, VAT, and income tax to year end.', nl: 'Het hele belastingjaar: openstaand, BTW en inkomstenbelasting tot jaareinde.' },
+
+  'backup.title': { en: 'Backup & restore', nl: 'Back-up & herstel' },
+  'backup.intro': {
+    en: 'Everything is stored only in this browser. Clearing site data, switching browsers or using a different profile loses it. Export a backup regularly.',
+    nl: 'Alles staat alleen in deze browser. Sitegegevens wissen, van browser wisselen of een ander profiel gebruiken wist het. Maak regelmatig een back-up.',
+  },
+  'backup.download': { en: 'Download backup', nl: 'Back-up downloaden' },
+  'backup.restoreFrom': { en: 'Restore from a backup file', nl: 'Herstellen uit een back-upbestand' },
+  'backup.merge': { en: 'Merge (safe)', nl: 'Samenvoegen (veilig)' },
+  'backup.mergeHint': {
+    en: 'Adds entries from the backup that are not already here. Nothing you currently have is changed or removed.',
+    nl: 'Voegt items toe die er nog niet zijn. Niets van wat je nu hebt wordt gewijzigd of verwijderd.',
+  },
+  'backup.replace': { en: 'Replace everything', nl: 'Alles vervangen' },
+  'backup.replaceHint': {
+    en: 'Discards what is stored here and uses the backup instead. A safety backup is downloaded first.',
+    nl: 'Gooit weg wat hier staat en gebruikt de back-up. Er wordt eerst een veiligheidsback-up gedownload.',
+  },
+  'backup.mergeBtn': { en: 'Merge backup', nl: 'Back-up samenvoegen' },
+  'backup.replaceBtn': { en: 'Replace with backup', nl: 'Vervangen door back-up' },
+  'backup.cancel': { en: 'Cancel', nl: 'Annuleren' },
+  'backup.stored': { en: 'Currently stored:', nl: 'Nu opgeslagen:' },
+
+  'ai.title': { en: 'Import with AI', nl: 'Importeren met AI' },
+  'ai.intro': {
+    en: 'Drop in invoices, receipts or a bank export and have them turned into records, instead of hand-matching a JSON file. Preview — the provider call is not connected yet.',
+    nl: 'Sleep facturen, bonnen of een bankafschrift erin en laat ze omzetten naar records, in plaats van handmatig een JSON-bestand te matchen. Preview — de provider-aanroep is nog niet aangesloten.',
+  },
+  'ai.preview': { en: 'Preview', nl: 'Preview' },
+  'ai.provider': { en: 'Provider', nl: 'Provider' },
+  'ai.notConfigured': { en: 'Not configured', nl: 'Niet geconfigureerd' },
+  'ai.model': { en: 'Model', nl: 'Model' },
+  'ai.apiKey': { en: 'API key', nl: 'API-sleutel' },
+  'ai.show': { en: 'Show', nl: 'Tonen' },
+  'ai.hide': { en: 'Hide', nl: 'Verbergen' },
+  'ai.keyWarning': {
+    en: 'A key typed here is kept in this browser only. That is fine on your own machine and not fine once this is hosted — before launch, extraction has to move behind a server route so the key never reaches the browser.',
+    nl: 'Een sleutel die je hier invoert blijft alleen in deze browser. Dat is prima op je eigen machine en niet oké zodra dit gehost wordt — vóór lancering moet extractie achter een server-route zodat de sleutel nooit in de browser komt.',
+  },
+  'ai.extract': { en: 'Extract records', nl: 'Records extraheren' },
+  'ai.clearFiles': { en: 'Clear {count} file(s)', nl: '{count} bestand(en) wissen' },
+
+
+  'bd.quarterHint': {
+    en: 'VAT charged minus VAT deductible. Bars below the line are quarters you reclaim.',
+    nl: 'Afgedragen BTW minus aftrekbare BTW. Balken onder de lijn zijn kwartalen die je terugvraagt.',
+  },
+  'bd.colMonth': { en: 'Month', nl: 'Maand' },
+  'bd.colCumRevenue': { en: 'Cumulative revenue', nl: 'Cumulatieve omzet' },
+  'bd.colCumExpenses': { en: 'Cumulative expenses', nl: 'Cumulatieve kosten' },
+  'bd.colNetProfit': { en: 'Net profit', nl: 'Nettowinst' },
+  'bd.colSource': { en: 'Source', nl: 'Bron' },
+  'bd.actual': { en: 'Actual', nl: 'Werkelijk' },
+  'bd.projected': { en: 'Projected', nl: 'Prognose' },
+
+  'chart.nothingYear': { en: 'Nothing to show yet for this year.', nl: 'Nog niets te tonen voor dit jaar.' },
+  'chart.noQuarters': { en: 'No quarters yet.', nl: 'Nog geen kwartalen.' },
+
+  'cl.intro': {
+    en: 'Save your own invoice details once, create reusable client profiles, and use them on the invoice page.',
+    nl: 'Sla je eigen factuurgegevens één keer op, maak herbruikbare klantprofielen en gebruik ze op de facturenpagina.',
+  },
+  'cl.businessHint': { en: 'Save multiple sender profiles and reuse them on invoices.', nl: 'Bewaar meerdere afzenderprofielen en hergebruik ze op facturen.' },
+  'cl.clientHint': { en: 'Reuse client invoice details without typing them every time.', nl: 'Hergebruik klantgegevens zonder ze elke keer te typen.' },
+  'cl.clientHint2': { en: 'Save reusable invoice details for each client so the To block is prefilled.', nl: 'Bewaar herbruikbare gegevens per klant zodat het Aan-blok vooraf is ingevuld.' },
+  'cl.noClientsYet': { en: 'No client profiles yet.', nl: 'Nog geen klantprofielen.' },
+  'cl.emptyFields': { en: 'Empty fields', nl: 'Lege velden' },
+
+  'exp.editingNotice': { en: 'Editing an existing expense. Saving overwrites it.', nl: 'Je bewerkt een bestaande uitgave. Opslaan overschrijft deze.' },
+  'exp.downloadReceipt': { en: 'Download receipt', nl: 'Bon downloaden' },
+
+  'inv.selectBoth': { en: 'Select a saved business profile and a saved client profile.', nl: 'Kies een opgeslagen bedrijfsprofiel en een opgeslagen klantprofiel.' },
+  'inv.editProfiles': { en: 'Edit profiles', nl: 'Profielen bewerken' },
+  'inv.businessProfile': { en: 'Business profile', nl: 'Bedrijfsprofiel' },
+  'inv.dateHint': { en: 'This is the date printed on the invoice document.', nl: 'Dit is de datum die op het factuurdocument staat.' },
+  'inv.dueHint': { en: 'Due date will be calculated automatically.', nl: 'De vervaldatum wordt automatisch berekend.' },
+  'inv.customVat': { en: 'Custom VAT %', nl: 'Aangepast BTW-%' },
+  'inv.fillClient': { en: 'Select a saved client profile to fill this section.', nl: 'Kies een opgeslagen klantprofiel om dit deel in te vullen.' },
+  'inv.profileIncomplete': {
+    en: 'Your business profile is not complete yet. Add your invoice details on the Profiles page before saving an invoice.',
+    nl: 'Je bedrijfsprofiel is nog niet compleet. Vul je factuurgegevens aan op de Profielen-pagina voordat je een factuur opslaat.',
+  },
+  'inv.noClientProfiles': {
+    en: 'No client profiles saved yet. Add one on the Profiles page so the invoice To section can be filled automatically.',
+    nl: 'Nog geen klantprofielen opgeslagen. Voeg er een toe op de Profielen-pagina zodat het Aan-blok automatisch wordt ingevuld.',
+  },
+
+  'total.label': { en: 'Total', nl: 'Totaal' },
+
+  'exp.dateRange': { en: 'Allowed date range: {min} to {max}', nl: 'Toegestane datumreeks: {min} tot {max}' },
+  'exp.addExpense': { en: 'Add Expense', nl: 'Uitgave toevoegen' },
+  'exp.saveChanges': { en: 'Save changes', nl: 'Wijzigingen opslaan' },
+  'exp.cancelEdit': { en: 'Cancel edit', nl: 'Bewerken annuleren' },
+  'exp.supplier': { en: 'Supplier', nl: 'Leverancier' },
+  'exp.category': { en: 'Category', nl: 'Categorie' },
+  'exp.amountExVat': { en: 'Amount ex VAT', nl: 'Bedrag excl. BTW' },
   'exp.title': { en: 'Expenses', nl: 'Uitgaven' },
   'exp.exVat': { en: 'Ex VAT', nl: 'Excl. BTW' },
   'exp.deductibleVat': { en: 'Deductible VAT', nl: 'Aftrekbare BTW' },

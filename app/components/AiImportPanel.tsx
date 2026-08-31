@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useState } from 'react';
 import { useLocalStorageState } from '@/lib/local-storage';
+import { useT } from '@/lib/i18n';
 import {
   AI_MODELS,
   AiProvider,
@@ -22,6 +23,7 @@ export default function AiImportPanel() {
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [showKey, setShowKey] = useState(false);
+  const { t } = useT();
 
   const update = (patch: Partial<AiSettings>) => {
     try {
@@ -64,32 +66,30 @@ export default function AiImportPanel() {
     <section className="card p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Import with AI</h2>
+          <h2 className="text-lg font-semibold">{t('ai.title')}</h2>
           <p className="mt-1 max-w-2xl text-sm muted">
-            Drop in invoices, receipts or a bank export and have them turned into records,
-            instead of hand-matching a JSON file. Preview — the provider call is not
-            connected yet.
+            {t('ai.intro')}
           </p>
         </div>
-        <span className="chip chip-warn">Preview</span>
+        <span className="chip chip-warn">{t('ai.preview')}</span>
       </div>
 
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         <label className="text-sm muted">
-          <span className="mb-2 block">Provider</span>
+          <span className="mb-2 block">{t('ai.provider')}</span>
           <select
             className="field"
             value={settings.provider}
             onChange={(event) => update({ provider: event.target.value as AiProvider })}
           >
-            <option value="none" style={{ color: 'var(--ink)', background: 'var(--surface)' }}>Not configured</option>
+            <option value="none" style={{ color: 'var(--ink)', background: 'var(--surface)' }}>{t('ai.notConfigured')}</option>
             <option value="anthropic" style={{ color: 'var(--ink)', background: 'var(--surface)' }}>Anthropic</option>
             <option value="openai" style={{ color: 'var(--ink)', background: 'var(--surface)' }}>OpenAI</option>
           </select>
         </label>
 
         <label className="text-sm muted">
-          <span className="mb-2 block">Model</span>
+          <span className="mb-2 block">{t('ai.model')}</span>
           <select
             className="field"
             value={settings.model}
@@ -105,7 +105,7 @@ export default function AiImportPanel() {
         </label>
 
         <label className="text-sm muted">
-          <span className="mb-2 block">API key</span>
+          <span className="mb-2 block">{t('ai.apiKey')}</span>
           <div className="flex gap-2">
             <input
               className="field"
@@ -115,16 +115,14 @@ export default function AiImportPanel() {
               onChange={(event) => update({ apiKey: event.target.value })}
             />
             <button className="btn" onClick={() => setShowKey((value) => !value)}>
-              {showKey ? 'Hide' : 'Show'}
+              {showKey ? t('ai.hide') : t('ai.show')}
             </button>
           </div>
         </label>
       </div>
 
       <div className="mt-4 panel p-4 text-xs muted">
-        A key typed here is kept in this browser only. That is fine on your own machine
-        and not fine once this is hosted — before launch, extraction has to move behind a
-        server route so the key never reaches the browser.
+        {t('ai.keyWarning')}
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -136,10 +134,10 @@ export default function AiImportPanel() {
           className="field max-w-sm file:mr-3 file:rounded-[7px] file:border-0 file:bg-[var(--surface-sunken)] file:px-3 file:py-1.5 file:text-sm file:font-medium"
         />
         <button className="btn btn-primary" onClick={runExtraction} disabled={!isAiConfigured(settings) || documents.length === 0}>
-          Extract records
+          {t('ai.extract')}
         </button>
         {documents.length > 0 && (
-          <button className="btn" onClick={() => setDocuments([])}>Clear {documents.length} file(s)</button>
+          <button className="btn" onClick={() => setDocuments([])}>{t('ai.clearFiles', { count: documents.length })}</button>
         )}
       </div>
 

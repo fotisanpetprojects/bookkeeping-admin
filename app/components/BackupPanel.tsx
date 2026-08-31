@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
 import { useLocalStorageState } from '@/lib/local-storage';
+import { useT } from '@/lib/i18n';
 import { ClientProfile, SavedBusinessProfile, StoredInvoice } from '@/lib/billing';
 import {
   BackupPayload,
@@ -29,6 +30,7 @@ export default function BackupPanel() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useT();
 
   const hasData =
     businessProfiles.length > 0 ||
@@ -123,13 +125,12 @@ export default function BackupPanel() {
     <section className="card p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Backup &amp; restore</h2>
+          <h2 className="text-xl font-semibold">{t('backup.title')}</h2>
           <p className="mt-2 max-w-2xl text-sm muted">
-            Everything is stored only in this browser. Clearing site data, switching
-            browsers or using a different profile loses it. Export a backup regularly.
+            {t('backup.intro')}
           </p>
           <p className="mt-2 text-sm faint">
-            Currently stored: {invoices.length} invoice(s) · {expenses.length} expense(s) ·{' '}
+            {t('backup.stored')}{' '}{invoices.length} invoice(s) · {expenses.length} expense(s) ·{' '}
             {clientProfiles.length} client profile(s) · {businessProfiles.length} business
             profile(s)
           </p>
@@ -140,13 +141,13 @@ export default function BackupPanel() {
           disabled={!hasData}
           className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Download backup
+          {t('backup.download')}
         </button>
       </div>
 
       <div className="mt-5 border-t border-[var(--line)] pt-5">
         <label className="block text-sm muted">
-          <span className="mb-2 block">Restore from a backup file</span>
+          <span className="mb-2 block">{t('backup.restoreFrom')}</span>
           <input
             ref={fileInputRef}
             type="file"
@@ -179,10 +180,9 @@ export default function BackupPanel() {
                   className="mt-1"
                 />
                 <span>
-                  <span className="font-medium">Merge (safe)</span>
+                  <span className="font-medium">{t('backup.merge')}</span>
                   <span className="block muted">
-                    Adds entries from the backup that are not already here. Nothing you
-                    currently have is changed or removed.
+                    {t('backup.mergeHint')}
                   </span>
                 </span>
               </label>
@@ -196,10 +196,9 @@ export default function BackupPanel() {
                   className="mt-1"
                 />
                 <span>
-                  <span className="font-medium">Replace everything</span>
+                  <span className="font-medium">{t('backup.replace')}</span>
                   <span className="block muted">
-                    Discards what is stored here and uses the backup instead. A safety
-                    backup is downloaded first.
+                    {t('backup.replaceHint')}
                   </span>
                 </span>
               </label>
@@ -210,13 +209,13 @@ export default function BackupPanel() {
                 onClick={handleRestore}
                 className="btn btn-primary"
               >
-                {mode === 'merge' ? 'Merge backup' : 'Replace with backup'}
+                {mode === 'merge' ? t('backup.mergeBtn') : t('backup.replaceBtn')}
               </button>
               <button
                 onClick={clearPending}
                 className="btn"
               >
-                Cancel
+                {t('backup.cancel')}
               </button>
             </div>
           </div>

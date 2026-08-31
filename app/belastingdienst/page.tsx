@@ -392,7 +392,7 @@ export default function BelastingdienstPage() {
         <section className="card p-6">
           <h2 className="text-xl font-semibold">{t('bd.netVatPerQuarter')}</h2>
           <p className="mt-1 mb-4 text-sm muted">
-            VAT charged minus VAT deductible. Bars below the line are quarters you reclaim.
+            {t('bd.quarterHint')}
           </p>
           <QuarterBars
             bars={data.quarters.map((quarter) => ({
@@ -458,11 +458,11 @@ export default function BelastingdienstPage() {
             <table className="w-full min-w-[520px] text-sm">
               <thead className="text-left faint">
                 <tr>
-                  <th className="py-2">Month</th>
-                  <th className="py-2 text-right">Cumulative revenue</th>
-                  <th className="py-2 text-right">Cumulative expenses</th>
-                  <th className="py-2 text-right">Net profit</th>
-                  <th className="py-2 text-right">Source</th>
+                  <th className="py-2">{t('bd.colMonth')}</th>
+                  <th className="py-2 text-right">{t('bd.colCumRevenue')}</th>
+                  <th className="py-2 text-right">{t('bd.colCumExpenses')}</th>
+                  <th className="py-2 text-right">{t('bd.colNetProfit')}</th>
+                  <th className="py-2 text-right">{t('bd.colSource')}</th>
                 </tr>
               </thead>
               <tbody className="tabular-nums">
@@ -473,7 +473,7 @@ export default function BelastingdienstPage() {
                     <td className="py-2 text-right">{formatCurrency(data.cumulativeExpenses[index])}</td>
                     <td className="py-2 text-right">{formatCurrency(data.cumulativeNetProfit[index])}</td>
                     <td className="py-2 text-right faint">
-                      {index <= data.lastMonthWithData ? 'Actual' : 'Projected'}
+                      {index <= data.lastMonthWithData ? t('bd.actual') : t('bd.projected')}
                     </td>
                   </tr>
                 ))}

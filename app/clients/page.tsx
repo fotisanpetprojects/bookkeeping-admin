@@ -28,7 +28,7 @@ function SavedBusinessProfilesPanel({
       <div className="mb-6">
         <h2 className="text-2xl font-semibold">{t('cl.business')}</h2>
         <p className="mt-2 text-sm muted">
-          Save multiple sender profiles and reuse them on invoices.
+          {t('cl.businessHint')}
         </p>
       </div>
 
@@ -116,14 +116,14 @@ function SavedClientProfilesPanel({
       <div className="mb-6">
         <h2 className="text-2xl font-semibold">{t('cl.clients')}</h2>
         <p className="mt-2 text-sm muted">
-          Reuse client invoice details without typing them every time.
+          {t('cl.clientHint')}
         </p>
       </div>
 
       <div className="space-y-4">
         {profiles.length === 0 ? (
           <div className="panel p-5 text-sm muted">
-            No client profiles yet.
+            {t('cl.noClientsYet')}
           </div>
         ) : (
           profiles.map((profile) => (
@@ -378,9 +378,7 @@ export default function ClientsPage() {
 
       <div>
         <h1 className="text-3xl font-semibold">{t('cl.title')}</h1>
-        <p className="mt-2 max-w-3xl text-sm muted">
-          Save your own invoice details once, create reusable client profiles, and use them on the invoice page.
-        </p>
+        <p className="mt-2 max-w-3xl text-sm muted">{t('cl.intro')}</p>
       </div>
 
       <section className="grid gap-6 xl:grid-cols-2">
@@ -398,13 +396,13 @@ export default function ClientsPage() {
                 onClick={emptyBusinessFields}
                 className="btn"
               >
-                Empty fields
+                {t('cl.emptyFields')}
               </button>
               <button
                 onClick={saveBusinessProfile}
                 className="btn btn-primary"
               >
-                Save profile
+                {t('cl.save')}
               </button>
             </div>
           </div>
@@ -560,7 +558,7 @@ export default function ClientsPage() {
                 {editingClientId ? 'Edit Client Profile' : 'New Client Profile'}
               </h2>
               <p className="mt-2 text-sm muted">
-                Save reusable invoice details for each client so the To block is prefilled.
+                {t('cl.clientHint2')}
               </p>
             </div>
 
@@ -569,13 +567,13 @@ export default function ClientsPage() {
                 onClick={emptyClientFields}
                 className="btn"
               >
-                Empty fields
+                {t('cl.emptyFields')}
               </button>
               <button
                 onClick={saveClientProfile}
                 className="btn btn-primary"
               >
-                Save profile
+                {t('cl.save')}
               </button>
             </div>
           </div>

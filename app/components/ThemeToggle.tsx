@@ -44,7 +44,7 @@ function MoonIcon() {
   );
 }
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ className = '' }: { className?: string }) {
   const [theme, setTheme] = useLocalStorageState<ThemeChoice>('theme', 'system');
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function ThemeToggle() {
   ];
 
   return (
-    <div className="btn gap-0 overflow-hidden p-0" role="group" aria-label="Colour theme">
+    <div className={`btn gap-0 overflow-hidden p-0 ${className}`} role="group" aria-label="Colour theme">
       {options.map((option) => (
         <button
           key={option.value}

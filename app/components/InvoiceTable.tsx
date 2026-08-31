@@ -76,12 +76,10 @@ export default function InvoiceTable({
 
   // Column sums live with the column, as the last row, rather than in tiles above.
   const totals = useMemo(() => ({
-    net: sumEuros(invoices.map(getInvoiceNetAmount)),
-    vat: sumEuros(invoices.map((invoice) => invoice.vatAmount)),
-    total: sumEuros(invoices.map((invoice) => invoice.totalAmount)),
-    paid: sumEuros(invoices.filter(isInvoicePaid).map((invoice) => invoice.totalAmount)),
-    open: sumEuros(invoices.filter((invoice) => !isInvoicePaid(invoice)).map((invoice) => invoice.totalAmount)),
-  }), [invoices]);
+    net: sumEuros(sorted.map(getInvoiceNetAmount)),
+    vat: sumEuros(sorted.map((invoice) => invoice.vatAmount)),
+    total: sumEuros(sorted.map((invoice) => invoice.totalAmount)),
+  }), [sorted]);
 
   const toggleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -190,14 +188,14 @@ export default function InvoiceTable({
         </tbody>
 
         <tfoot>
-          <tr className="border-t-2 border-[var(--line-strong)] font-medium">
-            <td colSpan={3}>{invoices.length} {t('inv.count')}</td>
-            <td className="text-right tabular-nums">{formatCurrency(totals.net)}</td>
-            <td className="text-right tabular-nums">{formatCurrency(totals.vat)}</td>
-            <td className="text-right tabular-nums">{formatCurrency(totals.total)}</td>
-            <td colSpan={2} className="text-right text-xs font-normal muted">
-              {t('inv.paidOpen', { paid: formatCurrency(totals.paid), open: formatCurrency(totals.open) })}
+          <tr className="totals-row">
+            <td colSpan={3} className="text-sm font-semibold uppercase tracking-wide">
+              {t('total.label')}
             </td>
+            <td className="text-right text-base font-semibold tabular-nums">{formatCurrency(totals.net)}</td>
+            <td className="text-right text-base font-semibold tabular-nums">{formatCurrency(totals.vat)}</td>
+            <td className="text-right text-base font-semibold tabular-nums">{formatCurrency(totals.total)}</td>
+            <td colSpan={2} />
           </tr>
         </tfoot>
       </table>
