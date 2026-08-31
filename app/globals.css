@@ -51,8 +51,9 @@
   --radius-lg: 16px;
 }
 
+/* Dark follows the OS unless the user has explicitly chosen light. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
 
     --bg: #0c0d11;
@@ -94,6 +95,50 @@
     --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.45), 0 24px 56px -22px rgba(0, 0, 0, 0.8);
   }
 }
+
+/* An explicit choice wins in both directions. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0c0d11;
+  --bg-accent: #121319;
+  --surface: #16181f;
+  --surface-2: #1b1e26;
+  --surface-sunken: #101218;
+
+  --ink: #f2f3f7;
+  --ink-2: #a9adbd;
+  --ink-3: #7c8091;
+
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+
+  --accent: #4a90e8;
+  --accent-ink: #07101d;
+  --accent-soft: rgba(74, 144, 232, 0.14);
+  --accent-line: rgba(74, 144, 232, 0.40);
+
+  --good: #3ecf7f;
+  --good-soft: rgba(62, 207, 127, 0.12);
+  --warn: #e0a92c;
+  --warn-soft: rgba(224, 169, 44, 0.12);
+  --bad: #f0716f;
+  --bad-soft: rgba(240, 113, 111, 0.12);
+
+  --series-1: #3987e5;
+  --series-2: #199e70;
+  --series-3: #d95926;
+  --chart-surface: #16181f;
+  --grid: rgba(255, 255, 255, 0.08);
+
+  --glass: rgba(32, 35, 44, 0.55);
+  --glass-hover: rgba(44, 48, 60, 0.75);
+  --glass-line: rgba(255, 255, 255, 0.10);
+
+  --shadow-float: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.45), 0 24px 56px -22px rgba(0, 0, 0, 0.8);
+}
+
 
 body {
   background: var(--bg);

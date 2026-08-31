@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { ChangeEvent, useState } from 'react';
 import { useLocalStorageState } from '@/lib/local-storage';
+import { useT } from '@/lib/i18n';
 import {
   BusinessProfile,
   ClientProfile,
@@ -21,10 +22,11 @@ function SavedBusinessProfilesPanel({
   onEdit: (profile: SavedBusinessProfile) => void;
   onRemove: (id: number) => void;
 }) {
+  const { t } = useT();
   return (
     <div className="card p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold">Saved Business Profiles</h2>
+        <h2 className="text-2xl font-semibold">{t('cl.business')}</h2>
         <p className="mt-2 text-sm muted">
           Save multiple sender profiles and reuse them on invoices.
         </p>
@@ -33,7 +35,7 @@ function SavedBusinessProfilesPanel({
       <div className="space-y-4">
         {profiles.length === 0 ? (
           <div className="panel p-5 text-sm muted">
-            No business profiles saved yet.
+            {t('cl.noBusiness')}
           </div>
         ) : (
           profiles.map((profile) => (
@@ -63,7 +65,7 @@ function SavedBusinessProfilesPanel({
                       onClick={() => onRemove(profile.id)}
                       className="rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-[var(--bad)] hover:bg-red-400/20"
                     >
-                      Remove
+                      {t('cl.remove')}
                     </button>
                   </div>
 
@@ -108,10 +110,11 @@ function SavedClientProfilesPanel({
   onEdit: (profile: ClientProfile) => void;
   onRemove: (id: number) => void;
 }) {
+  const { t } = useT();
   return (
     <div className="card p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold">Saved Client Profiles</h2>
+        <h2 className="text-2xl font-semibold">{t('cl.clients')}</h2>
         <p className="mt-2 text-sm muted">
           Reuse client invoice details without typing them every time.
         </p>
@@ -149,7 +152,7 @@ function SavedClientProfilesPanel({
                     onClick={() => onRemove(profile.id)}
                     className="rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-[var(--bad)] hover:bg-red-400/20"
                   >
-                    Remove
+                    {t('cl.remove')}
                   </button>
                 </div>
               </div>
@@ -169,6 +172,7 @@ function SavedClientProfilesPanel({
 }
 
 export default function ClientsPage() {
+  const { t } = useT();
   const [, setLegacyBusinessProfile] = useLocalStorageState<BusinessProfile>(
     'business-profile',
     EMPTY_BUSINESS_PROFILE
@@ -373,7 +377,7 @@ export default function ClientsPage() {
     <main className="space-y-6">
 
       <div>
-        <h1 className="text-3xl font-semibold">Billing Profiles</h1>
+        <h1 className="text-3xl font-semibold">{t('cl.title')}</h1>
         <p className="mt-2 max-w-3xl text-sm muted">
           Save your own invoice details once, create reusable client profiles, and use them on the invoice page.
         </p>
@@ -383,7 +387,7 @@ export default function ClientsPage() {
         <div className="card p-6">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-semibold">Your Business Profile</h2>
+              <h2 className="text-2xl font-semibold">{t('cl.business')}</h2>
               <p className="mt-2 text-sm muted">
                 This becomes the <span className="font-medium">From</span> block on each invoice.
               </p>
@@ -407,7 +411,7 @@ export default function ClientsPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm muted">Business name</span>
+              <span className="text-sm muted">{t('cl.businessName')}</span>
               <input
                 className="field"
                 placeholder="Northwind Advisory"
@@ -417,7 +421,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">Contact name</span>
+              <span className="text-sm muted">{t('cl.contactName')}</span>
               <input
                 className="field"
                 placeholder="Alex Example"
@@ -427,7 +431,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">Street and number</span>
+              <span className="text-sm muted">{t('cl.street')}</span>
               <input
                 className="field"
                 placeholder="Keizersgracht 100"
@@ -437,7 +441,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">Postal code and city</span>
+              <span className="text-sm muted">{t('cl.postcodeCity')}</span>
               <input
                 className="field"
                 placeholder="1015 CV Amsterdam"
@@ -447,7 +451,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">KvK number</span>
+              <span className="text-sm muted">{t('cl.kvk')}</span>
               <input
                 className="field"
                 placeholder="12345678"
@@ -457,7 +461,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">BTW number</span>
+              <span className="text-sm muted">{t('cl.vatNumber')}</span>
               <input
                 className="field"
                 placeholder="NL001234567B01"
@@ -467,7 +471,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">IBAN</span>
+              <span className="text-sm muted">{t('cl.iban')}</span>
               <input
                 className="field"
                 placeholder="NL91ABNA0417164300"
@@ -477,7 +481,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">Bank name</span>
+              <span className="text-sm muted">{t('cl.bank')}</span>
               <input
                 className="field"
                 placeholder="Example Bank"
@@ -487,7 +491,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2 md:max-w-[15rem]">
-              <span className="text-sm muted">Default payment terms (days)</span>
+              <span className="text-sm muted">{t('inv.terms')}</span>
               <input
                 className="field"
                 type="number"
@@ -499,7 +503,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">Logo / letterhead</span>
+              <span className="text-sm muted">{t('cl.logo')}</span>
               <input
                 key={businessLogoInputKey}
                 className="field file:mr-3 file:rounded-[7px] file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-[var(--accent-ink)]"
@@ -578,7 +582,7 @@ export default function ClientsPage() {
 
           <div className="grid gap-4">
             <label className="space-y-2">
-              <span className="text-sm muted">Company name</span>
+              <span className="text-sm muted">{t('cl.companyName')}</span>
               <input
                 className="field"
                 placeholder="Acme Studio B.V."
@@ -588,7 +592,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">Attention / contact person</span>
+              <span className="text-sm muted">{t('cl.attention')}</span>
               <input
                 className="field"
                 placeholder="Taylor Example"
@@ -598,7 +602,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">Street and number</span>
+              <span className="text-sm muted">{t('cl.street')}</span>
               <input
                 className="field"
                 placeholder="Stationsplein 45"
@@ -608,7 +612,7 @@ export default function ClientsPage() {
             </label>
 
             <label className="space-y-2">
-              <span className="text-sm muted">Postal code and city</span>
+              <span className="text-sm muted">{t('cl.postcodeCity')}</span>
               <input
                 className="field"
                 placeholder="3013 AK Rotterdam"
@@ -619,7 +623,7 @@ export default function ClientsPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-sm muted">KvK number</span>
+                <span className="text-sm muted">{t('cl.kvk')}</span>
                 <input
                   className="field"
                   placeholder="87654321"
@@ -629,7 +633,7 @@ export default function ClientsPage() {
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm muted">BTW number</span>
+                <span className="text-sm muted">{t('cl.vatNumber')}</span>
                 <input
                   className="field"
                   placeholder="NL008765432B01"

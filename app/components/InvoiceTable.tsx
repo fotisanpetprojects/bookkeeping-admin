@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useT } from '@/lib/i18n';
 import {
   StoredInvoice,
   formatCurrency,
@@ -11,6 +12,7 @@ import {
   isInvoiceOverdue,
   isInvoicePaid,
   isInvoiceRecord,
+  sumEuros,
 } from '@/lib/billing';
 
 type SortKey = 'invoiceNumber' | 'date' | 'client' | 'net' | 'vat' | 'total' | 'status';
@@ -46,6 +48,7 @@ export default function InvoiceTable({
   onDelete: (invoice: StoredInvoice) => void;
   onTogglePaid: (invoice: StoredInvoice) => void;
 }) {
+  const { t } = useT();
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [direction, setDirection] = useState<Direction>('desc');
 
@@ -71,6 +74,15 @@ export default function InvoiceTable({
     });
   }, [direction, invoices, sortKey]);
 
+  // Column sums live with the column, as the last row, rather than in tiles above.
+  const totals = useMemo(() => ({
+    net: sumEuros(invoices.map(getInvoiceNetAmount)),
+    vat: sumEuros(invoices.map((invoice) => invoice.vatAmount)),
+    total: sumEuros(invoices.map((invoice) => invoice.totalAmount)),
+    paid: sumEuros(invoices.filter(isInvoicePaid).map((invoice) => invoice.totalAmount)),
+    open: sumEuros(invoices.filter((invoice) => !isInvoicePaid(invoice)).map((invoice) => invoice.totalAmount)),
+  }), [invoices]);
+
   const toggleSort = (key: SortKey) => {
     if (key === sortKey) {
       setDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
@@ -83,17 +95,17 @@ export default function InvoiceTable({
   const arrow = (key: SortKey) => (key === sortKey ? (direction === 'asc' ? ' ↑' : ' ↓') : '');
 
   const columns: { key: SortKey; label: string; align?: string }[] = [
-    { key: 'invoiceNumber', label: 'Invoice' },
-    { key: 'date', label: 'Date' },
-    { key: 'client', label: 'Client' },
-    { key: 'net', label: 'Ex VAT', align: 'text-right' },
-    { key: 'vat', label: 'VAT', align: 'text-right' },
-    { key: 'total', label: 'Total', align: 'text-right' },
-    { key: 'status', label: 'Paid' },
+    { key: 'invoiceNumber', label: t('inv.colInvoice') },
+    { key: 'date', label: t('inv.colDate') },
+    { key: 'client', label: t('inv.colClient') },
+    { key: 'net', label: t('inv.colExVat'), align: 'text-right' },
+    { key: 'vat', label: t('inv.colVat'), align: 'text-right' },
+    { key: 'total', label: t('inv.colTotal'), align: 'text-right' },
+    { key: 'status', label: t('inv.colPaid') },
   ];
 
   if (invoices.length === 0) {
-    return <div className="card p-6 muted">No invoices yet.</div>;
+    return <div className="card p-6 muted">{t('inv.none')}</div>;
   }
 
   return (
@@ -114,7 +126,7 @@ export default function InvoiceTable({
                 {arrow(column.key)}
               </th>
             ))}
-            <th className="text-right">Actions</th>
+            <th className="text-right">{t('inv.colActions')}</th>
           </tr>
         </thead>
 
@@ -139,15 +151,15 @@ export default function InvoiceTable({
                     className="flex cursor-pointer items-center gap-2 whitespace-nowrap"
                     title={
                       paid
-                        ? `Paid on ${formatDate(invoice.paidDate ?? '')}`
+                        ? t('inv.paidOn', { date: formatDate(invoice.paidDate ?? '') })
                         : overdue
-                          ? `Overdue — was due ${formatDate(invoice.dueDate)}`
-                          : `Due ${formatDate(invoice.dueDate)}`
+                          ? t('inv.wasDue', { date: formatDate(invoice.dueDate) })
+                          : t('inv.due', { date: formatDate(invoice.dueDate) })
                     }
                   >
                     <input type="checkbox" checked={paid} onChange={() => onTogglePaid(invoice)} />
                     <span className={`chip ${paid ? 'chip-good' : overdue ? 'chip-bad' : ''}`}>
-                      {paid ? 'Paid' : overdue ? 'Overdue' : 'Open'}
+                      {paid ? t('inv.statusPaid') : overdue ? t('inv.statusOverdue') : t('inv.statusOpen')}
                     </span>
                   </label>
                 </td>
@@ -156,18 +168,18 @@ export default function InvoiceTable({
                   <div className="flex items-center justify-end gap-1.5">
                     {modern && (
                       <>
-                        <button className="btn btn-icon" title="Load into preview" aria-label="Load into preview" onClick={() => onLoad(invoice)}>
+                        <button className="btn btn-icon" title={t('inv.actLoad')} aria-label={t('inv.actLoad')} onClick={() => onLoad(invoice)}>
                           <Icon name="load" />
                         </button>
-                        <button className="btn btn-icon" title="Download PDF" aria-label="Download PDF" onClick={() => onPrint(invoice)}>
+                        <button className="btn btn-icon" title={t('inv.actPrint')} aria-label={t('inv.actPrint')} onClick={() => onPrint(invoice)}>
                           <Icon name="print" />
                         </button>
-                        <button className="btn btn-icon" title="Edit invoice" aria-label="Edit invoice" onClick={() => onEdit(invoice)}>
+                        <button className="btn btn-icon" title={t('inv.actEdit')} aria-label={t('inv.actEdit')} onClick={() => onEdit(invoice)}>
                           <Icon name="edit" />
                         </button>
                       </>
                     )}
-                    <button className="btn btn-icon btn-danger" title="Delete invoice" aria-label="Delete invoice" onClick={() => onDelete(invoice)}>
+                    <button className="btn btn-icon btn-danger" title={t('inv.actDelete')} aria-label={t('inv.actDelete')} onClick={() => onDelete(invoice)}>
                       <Icon name="delete" />
                     </button>
                   </div>
@@ -176,6 +188,18 @@ export default function InvoiceTable({
             );
           })}
         </tbody>
+
+        <tfoot>
+          <tr className="border-t-2 border-[var(--line-strong)] font-medium">
+            <td colSpan={3}>{invoices.length} {t('inv.count')}</td>
+            <td className="text-right tabular-nums">{formatCurrency(totals.net)}</td>
+            <td className="text-right tabular-nums">{formatCurrency(totals.vat)}</td>
+            <td className="text-right tabular-nums">{formatCurrency(totals.total)}</td>
+            <td colSpan={2} className="text-right text-xs font-normal muted">
+              {t('inv.paidOpen', { paid: formatCurrency(totals.paid), open: formatCurrency(totals.open) })}
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   );

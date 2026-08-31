@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LANGUAGES, StringKey, useLanguage, useT } from '@/lib/i18n';
+import ThemeToggle from '@/app/components/ThemeToggle';
 
 const TABS: { href: string; key: StringKey }[] = [
   { href: '/', key: 'nav.home' },
@@ -48,6 +49,8 @@ export default function NavTabs() {
           );
         })}
       </nav>
+
+      <ThemeToggle />
 
       <div className="btn gap-0 overflow-hidden p-0">
         {LANGUAGES.map((option) => (

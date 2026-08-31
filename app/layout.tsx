@@ -16,6 +16,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=JSON.parse(localStorage.getItem('theme'));if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t)}}catch(e){}",
+          }}
+        />
+      </head>
       <body className="min-h-screen">
         <div className="min-h-screen">
           <SeedLoader />

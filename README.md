@@ -24,13 +24,16 @@ That tradeoff keeps the product lightweight, inexpensive to run, and well scoped
 
 ## Features
 
-- `Dashboard`: quick access to the main bookkeeping flows
-- `Profiles`: save reusable sender and client billing details
-- `Invoices`: create invoices from saved profiles and calculate VAT automatically
-- `Expenses`: track costs, VAT, and receipt files locally
-- `BTW Summary`: net BTW per quarter (VAT charged on invoices minus deductible VAT on expenses)
-- `Local persistence`: store everything in browser `localStorage`
-- `Backup & restore`: export all bookkeeping data to a JSON file and merge or replace it back
+- `Home`: quick access to the main flows, plus backup and AI-assisted import
+- `Invoices`: build invoices from saved profiles, calculate VAT from hours and rate, export a one-page PDF, and manage everything in a sortable table with paid/overdue status
+- `Profiles`: reusable sender and client billing details, including a letterhead
+- `Expenses`: log costs, VAT rates and receipts, filtered by year
+- `VAT Summary`: net BTW per quarter, with each quarter markable as filed and paid so the headline shows what is *still* owed
+- `Belastingdienst`: the whole tax year — receivables, VAT, an income tax estimate with every step shown, and a projection to 31 December
+- `Language`: full NL/EN switch; English shows Dutch tax terms alongside, since those are the words on the actual forms
+- `Theme`: light and dark, following your system by default with a manual override
+- `Local persistence`: everything stored in browser `localStorage`
+- `Backup & restore`: export all data to JSON, and merge or replace it back
 
 ## Data Safety
 
@@ -47,14 +50,25 @@ using a different browser profile will lose everything.
 - Receipts are stored inline as base64, and the whole origin is limited to roughly 5MB,
   so single receipt files are capped at 1MB.
 
+An optional `public/seed/backfill.json` (gitignored) is applied once on first load, so a
+prepared set of books can be loaded without hand entry. It holds real bookkeeping data
+and must never be committed.
+
+The AI import panel currently keeps its API key in `localStorage`. That is acceptable on
+a personal machine and **not** acceptable hosted — moving extraction behind a server
+route is a prerequisite for launch.
+
 BTW figures do not model reverse-charge (`BTW verlegd`), the small business scheme
-(`KOR`) or intra-EU supplies. Check those cases against your own situation before filing.
+(`KOR`) or intra-EU supplies, and the income tax estimate ships with editable default
+rates that should be checked against belastingdienst.nl. Neither is tax advice.
 
 ## Screenshots
 
-### Dashboard Overview
+> Note: the screenshots below predate the light/dark restyle and the Belastingdienst tab.
 
-The landing page gives quick access to the main bookkeeping workflows and shows the product's overall visual direction.
+### Home
+
+The landing page gives quick access to the main bookkeeping workflows.
 
 ![Bookkeeping Admin dashboard overview](public/screenshots/dashboard-overview.png)
 
@@ -69,22 +83,30 @@ The expenses page shows the local-first receipt logging flow, VAT selection, and
 ```text
 .
 ├── app/
-│   ├── btw-summary/page.tsx    Quarterly VAT summary page
+│   ├── belastingdienst/page.tsx  Tax year overview, charts, income tax estimate
+│   ├── btw-summary/page.tsx      Quarterly VAT, with settled-quarter tracking
+│   ├── clients/page.tsx          Billing profile management
+│   ├── expenses/page.tsx         Expense and receipt tracking
+│   ├── invoices/page.tsx         Invoice builder, preview and PDF export
 │   ├── components/
-│   │   └── BackupPanel.tsx     Export / restore bookkeeping data
-│   ├── clients/page.tsx        Billing profile management
-│   ├── expenses/page.tsx       Expense and receipt tracking
-│   ├── invoices/page.tsx       Invoice builder and VAT calculation
-│   ├── layout.tsx              Shared app shell and navigation
-│   ├── page.tsx                Dashboard / landing page
-│   └── globals.css             Global styles
+│   │   ├── AiImportPanel.tsx     AI-assisted import (preview; provider not wired)
+│   │   ├── BackupPanel.tsx       Export / restore bookkeeping data
+│   │   ├── InvoiceTable.tsx      Sortable invoice table with row actions
+│   │   ├── NavTabs.tsx           Navigation, language and theme controls
+│   │   ├── SeedLoader.tsx        One-time local backfill from /seed
+│   │   ├── ThemeToggle.tsx       Light / dark / system
+│   │   └── charts.tsx            Inline SVG donut, bars and projection
+│   ├── layout.tsx                Shared app shell
+│   ├── page.tsx                  Home
+│   └── globals.css               Design tokens for light and dark
 ├── lib/
-│   ├── backup.ts               Backup export, validation and restore
-│   ├── billing.ts              Shared billing types and helpers
-│   └── local-storage.ts        Local storage state hook
-├── public/                     Static assets
-├── next.config.ts              Next.js configuration
-├── package.json                Scripts and dependencies
+│   ├── ai-import.ts              Extraction contract and provider seam
+│   ├── backup.ts                 Backup export, validation and restore
+│   ├── billing.ts                Shared billing types and money helpers
+│   ├── i18n.ts                   NL/EN dictionary
+│   ├── local-storage.ts          Local storage state hook
+│   └── tax.ts                    ZZP income tax estimate and BTW deadlines
+├── public/                       Static assets
 └── README.md
 ```
 
@@ -97,19 +119,23 @@ The expenses page shows the local-first receipt logging flow, VAT selection, and
 | Language | `TypeScript` | Type safety across app logic |
 | Styling | `Tailwind CSS 4` | Layout and visual styling |
 | Persistence | `localStorage` | Local-first data storage in the browser |
+| Charts | inline SVG | No charting dependency; colours validated for contrast and colourblind separation |
 | Tooling | `ESLint` | Basic code quality checks |
 
 ## Built With AI
 
 This project is also a practical exploration of AI-assisted product development.
 
-I used OpenAI and Codex to:
+I used AI assistants (initially OpenAI and Codex, more recently Claude Code) to:
 
 - turn rough bookkeeping pain points into product requirements
 - define the page split and information architecture
 - iterate on invoice, profile, and VAT workflows
 - refine form behavior and reusable data models
 - review product tradeoffs around privacy, local-first storage, validation, and security
+- find and fix real defects: a silent data-loss bug in the storage layer, a VAT summary
+  that only counted half a return, and a timezone bug that reported a filing deadline
+  a day early
 
 The goal was not just to generate code, but to use AI as part of a real product delivery workflow: moving from a personal problem to a working, testable product.
 
@@ -152,16 +178,44 @@ The simplest deployment path is Vercel. The app works well as a public demo beca
 
 ## Roadmap
 
-Likely next improvements:
+### Near term
 
-- stronger input validation and security hardening
-- safer receipt upload constraints
-- export/import for local backup
-- PDF invoice export
-- clearer settings and data portability controls
-- optional PWA packaging
+- wire the AI import provider call behind a **server route**, so an API key never sits in the browser
+- retire the rigid JSON backup/restore in favour of that import once it is reliable
+- per-client invoice language, independent of the interface language
+- verify the 2026 tax rates that currently ship as editable defaults
 
-If the product ever grows beyond a local-first tool, the next step would be an optional backend for authentication, sync, and storage. That is intentionally out of scope for the current version.
+### Where this is heading: personal financial admin, not just bookkeeping
+
+Invoices and BTW are one corner of a freelancer's finances. The same local-first,
+privacy-conscious foundation extends naturally to the rest of it, as separate tabs
+over a shared ledger:
+
+- **Bank statements** — import a `bankafschrift` (CSV/MT940/CAMT), match transactions
+  against invoices and expenses automatically, and flag what is unreconciled. This is
+  the single biggest reduction in manual entry, and it is what the AI import seam is
+  really for.
+- **Expense intelligence** — categorise spending from the statement, separate business
+  from private, and surface what is deductible that is currently being missed.
+- **Mortgage and debt** — hold the mortgage, its rate and remaining term; show interest
+  paid per year, which feeds the income tax picture (`eigenwoningforfait`, mortgage
+  interest deduction).
+- **Net worth** — assets and liabilities in one place, including box 3 holdings, with
+  the same year-by-year treatment the tax page already applies to income.
+- **Forward view** — extend the existing projection from revenue into full cash flow:
+  what is coming in, what is committed, what to keep aside, and what is genuinely free.
+
+Two principles should survive that expansion. Nothing is invented — an estimate is
+always shown with the arithmetic behind it, as the income tax breakdown already is.
+And anything sensitive stays on the user's machine unless they explicitly choose
+otherwise; a hosted version needs a real backend and auth story before it holds
+anyone's bank data.
+
+### If it grows beyond local-first
+
+An optional backend for authentication, sync and storage. Deliberately out of scope
+for the current version, and a hard prerequisite for the bank-statement work above
+ever being offered to anyone but yourself.
 
 ## Portfolio Value
 

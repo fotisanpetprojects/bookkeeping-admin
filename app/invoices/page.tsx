@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { jsPDF } from 'jspdf';
 import InvoiceTable from '@/app/components/InvoiceTable';
+import { useT } from '@/lib/i18n';
 import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
 import {
   BusinessProfile,
@@ -24,7 +25,6 @@ import {
   isInvoicePaid,
   isInvoiceRecord,
   roundCents,
-  sumEuros,
   toBusinessProfile,
 } from '@/lib/billing';
 
@@ -300,6 +300,7 @@ export default function InvoicesPage() {
   const [editingInvoiceId, setEditingInvoiceId] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const { t } = useT();
 
   const minDate = getMinDateString();
   const maxFutureDate = getMaxFutureDateString();
@@ -350,17 +351,6 @@ export default function InvoicesPage() {
     return addDays(invoiceDate, Number(resolvedPaymentTermsDays) || 30);
   }, [invoiceDate, resolvedPaymentTermsDays]);
 
-  const totals = useMemo(() => {
-    return {
-      exVat: sumEuros(
-        storedInvoices.map((invoice) =>
-          isInvoiceRecord(invoice) ? invoice.subtotal : invoice.amountExVat
-        )
-      ),
-      vat: sumEuros(storedInvoices.map((invoice) => invoice.vatAmount)),
-      total: sumEuros(storedInvoices.map((invoice) => invoice.totalAmount)),
-    };
-  }, [storedInvoices]);
 
   const loadedInvoice = useMemo(() => {
     const invoice =
@@ -658,27 +648,10 @@ export default function InvoicesPage() {
       )}
 
       <div className="no-print">
-        <h1 className="text-3xl font-semibold">Invoices</h1>
+        <h1 className="text-3xl font-semibold">{t('inv.title')}</h1>
         <p className="mt-2 text-sm muted">
-          Build invoices from saved profiles and generate VAT totals from hours and rate.
+          {t('inv.subtitle')}
         </p>
-      </div>
-
-      <div className="no-print grid gap-4 md:grid-cols-3">
-        <div className="card p-6">
-          <div className="text-sm faint">Invoiced ex VAT</div>
-          <div className="mt-2 text-3xl font-semibold">{formatCurrency(totals.exVat)}</div>
-        </div>
-
-        <div className="card p-6">
-          <div className="text-sm faint">VAT to collect</div>
-          <div className="mt-2 text-3xl font-semibold">{formatCurrency(totals.vat)}</div>
-        </div>
-
-        <div className="card p-6">
-          <div className="text-sm faint">Total incl VAT</div>
-          <div className="mt-2 text-3xl font-semibold">{formatCurrency(totals.total)}</div>
-        </div>
       </div>
 
       <section className="invoice-layout grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -686,7 +659,7 @@ export default function InvoicesPage() {
           <div className="card p-6">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold">Profiles</h2>
+                <h2 className="text-2xl font-semibold">{t('cl.title')}</h2>
                 <p className="mt-2 text-sm muted">
                   Select a saved business profile and a saved client profile.
                 </p>
@@ -731,7 +704,7 @@ export default function InvoicesPage() {
               </div>
 
               <label className="space-y-2">
-                <span className="text-sm muted">Client profile</span>
+                <span className="text-sm muted">{t('inv.to')}</span>
                 <select
                   className="field"
                   value={selectedClientId}
@@ -754,10 +727,10 @@ export default function InvoicesPage() {
           </div>
 
           <div className="card p-6">
-            <h2 className="text-2xl font-semibold">Invoice Details</h2>
+            <h2 className="text-2xl font-semibold">{t('inv.details')}</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-sm muted">Invoice number</span>
+                <span className="text-sm muted">{t('inv.number')}</span>
                 <input
                   className="field"
                   placeholder="202603-01"
@@ -770,7 +743,7 @@ export default function InvoicesPage() {
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm muted">Invoice date</span>
+                <span className="text-sm muted">{t('inv.date')}</span>
                 <input
                   className="field"
                   type="date"
@@ -788,7 +761,7 @@ export default function InvoicesPage() {
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm muted">Service period</span>
+                <span className="text-sm muted">{t('inv.period')}</span>
                 <input
                   className="field"
                   placeholder="March 2026"
@@ -804,7 +777,7 @@ export default function InvoicesPage() {
               </label>
 
               <label className="space-y-2 md:max-w-[14rem]">
-                <span className="text-sm muted">Payment terms (days)</span>
+                <span className="text-sm muted">{t('inv.terms')}</span>
                 <input
                   className="field"
                   type="number"
@@ -823,10 +796,10 @@ export default function InvoicesPage() {
           </div>
 
           <div className="card p-6">
-            <h2 className="text-2xl font-semibold">Work and VAT</h2>
+            <h2 className="text-2xl font-semibold">{t('inv.workAndVat')}</h2>
             <div className="mt-5 grid gap-4">
               <label className="space-y-2">
-                <span className="text-sm muted">Description</span>
+                <span className="text-sm muted">{t('inv.description')}</span>
                 <textarea
                   className="field min-h-28"
                   placeholder="Consultancy services for monthly project support"
@@ -840,7 +813,7 @@ export default function InvoicesPage() {
 
               <div className="grid gap-4 md:grid-cols-[0.5fr_0.5fr_0.45fr]">
                 <label className="space-y-2">
-                  <span className="text-sm muted">Hours</span>
+                  <span className="text-sm muted">{t('inv.hours')}</span>
                   <input
                     className="field"
                     type="number"
@@ -856,7 +829,7 @@ export default function InvoicesPage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-sm muted">Rate (EUR)</span>
+                  <span className="text-sm muted">{t('inv.rate')}</span>
                   <input
                     className="field"
                     type="number"
@@ -941,7 +914,7 @@ export default function InvoicesPage() {
                 onClick={saveInvoice}
                 className="btn btn-primary"
               >
-                {editingInvoiceId !== null ? 'Update invoice' : 'Save invoice'}
+                {editingInvoiceId !== null ? t('inv.update') : t('inv.save')}
               </button>
 
               {editingInvoiceId !== null && (
@@ -949,7 +922,7 @@ export default function InvoicesPage() {
                   onClick={cancelEditing}
                   className="btn"
                 >
-                  Cancel edit
+                  {t('inv.cancelEdit')}
                 </button>
               )}
             </div>
@@ -1087,9 +1060,9 @@ export default function InvoicesPage() {
 
       <section className="no-print space-y-3">
         <div>
-          <h2 className="text-2xl font-semibold">Saved invoices</h2>
+          <h2 className="text-2xl font-semibold">{t('inv.saved')}</h2>
           <p className="mt-2 text-sm muted">
-            Sort any column. Actions are on the right; the checkbox marks an invoice paid, and hovering it shows the payment date.
+            {t('inv.savedHint')}
           </p>
         </div>
 
