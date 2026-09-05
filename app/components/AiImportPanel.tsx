@@ -131,8 +131,13 @@ export default function AiImportPanel() {
           multiple
           accept=".pdf,.csv,.txt,.json,.xlsx,image/*"
           onChange={addFiles}
+          disabled={!isAiConfigured(settings)}
           className="field max-w-sm file:mr-3 file:rounded-[7px] file:border-0 file:bg-[var(--surface-sunken)] file:px-3 file:py-1.5 file:text-sm file:font-medium"
         />
+        {!isAiConfigured(settings) && (
+          <span className="text-sm faint">{t('ai.notAcceptingFiles')}</span>
+        )}
+
         <button className="btn btn-primary" onClick={runExtraction} disabled={!isAiConfigured(settings) || documents.length === 0}>
           {t('ai.extract')}
         </button>

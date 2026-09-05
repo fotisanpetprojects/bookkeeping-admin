@@ -271,6 +271,10 @@ export const STRINGS = {
     en: 'A key typed here is kept in this browser only. That is fine on your own machine and not fine once this is hosted — before launch, extraction has to move behind a server route so the key never reaches the browser.',
     nl: 'Een sleutel die je hier invoert blijft alleen in deze browser. Dat is prima op je eigen machine en niet oké zodra dit gehost wordt — vóór lancering moet extractie achter een server-route zodat de sleutel nooit in de browser komt.',
   },
+  'ai.notAcceptingFiles': {
+    en: 'Not accepting files yet. To restore a backup, use Backup & restore above.',
+    nl: 'Accepteert nog geen bestanden. Gebruik hierboven Back-up & herstel om een back-up terug te zetten.',
+  },
   'ai.extract': { en: 'Extract records', nl: 'Records extraheren' },
   'ai.clearFiles': { en: 'Clear {count} file(s)', nl: '{count} bestand(en) wissen' },
 

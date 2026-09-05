@@ -44,9 +44,9 @@ export default function Home() {
         ))}
       </section>
 
-      <AiImportPanel />
-
       <BackupPanel />
+
+      <AiImportPanel />
     </div>
   );
 }
