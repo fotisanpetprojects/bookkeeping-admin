@@ -383,3 +383,72 @@ export function ProjectionChart({
     </div>
   );
 }
+
+export type CategoryBar = {
+  label: string;
+  value: number;
+  share: number;
+  count: number;
+  fixed: boolean;
+};
+
+/**
+ * A ranked bar list rather than a pie: fourteen categories cannot be told apart
+ * by hue, so length carries magnitude and the label carries identity. The only
+ * thing colour encodes is the one split that is actually binary — a commitment
+ * you cannot easily change this month versus spending you can.
+ */
+export function CategoryBars({ bars, fixedLabel, flexibleLabel }: {
+  bars: CategoryBar[];
+  fixedLabel: string;
+  flexibleLabel: string;
+}) {
+  const { t } = useT();
+
+  if (bars.length === 0) {
+    return <div className="py-10 text-center text-sm faint">{t('chart.nothingYear')}</div>;
+  }
+
+  const max = Math.max(...bars.map((bar) => bar.value), 1);
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap gap-4 text-sm">
+        <span className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: 'var(--series-1)' }} />
+          {fixedLabel}
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: 'var(--series-2)' }} />
+          {flexibleLabel}
+        </span>
+      </div>
+
+      <div className="space-y-2.5">
+        {bars.map((bar) => (
+          <div key={bar.label} className="grid grid-cols-[minmax(96px,1.1fr)_3fr_auto] items-center gap-3">
+            <div className="truncate text-sm" title={bar.label}>
+              {bar.label}
+            </div>
+
+            <div className="h-5 rounded-[4px]" style={{ background: 'var(--surface-sunken)' }}>
+              <div
+                className="h-5 rounded-[4px]"
+                style={{
+                  width: `${Math.max(1.5, (bar.value / max) * 100)}%`,
+                  background: bar.fixed ? 'var(--series-1)' : 'var(--series-2)',
+                }}
+                title={`${bar.count} transaction(s)`}
+              />
+            </div>
+
+            <div className="whitespace-nowrap text-right text-sm tabular-nums">
+              <span className="font-medium">{formatCurrency(bar.value)}</span>
+              <span className="ml-2 faint">{(bar.share * 100).toFixed(1)}%</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

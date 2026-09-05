@@ -50,9 +50,34 @@ Belongs on the client profile.
 
 **README screenshots predate the light/dark restyle** and the Belastingdienst tab.
 
+## Bank import (new)
+
+**Categorisation covers ~93% of value, ~64% of transactions** on a real 975-row ING
+export. The gap is `BA` (payment-terminal) rows at small local merchants, which no
+rule can place without a merchant database. That is why the page groups unknowns by
+merchant: 332 unfiled rows were only 165 distinct merchants, and assigning one files
+all of its transactions, now and on future imports.
+
+**Only ING's export shape is tested.** Columns are resolved by name in English and
+Dutch, and the amount/date parsers handle the common Dutch variants, but no other
+bank's export has been tried.
+
+**Transfers, investments and card repayments are excluded from spending** on purpose
+— a credit-card settlement is last month's spending being repaid, and counting it
+again would double what the month cost. If a transfer is genuinely a cost, it has to
+be recategorised by hand.
+
+**The AI extraction route is still not built.** It is what would close the remaining
+unknowns and add PDF support; the parser and the page are deliberately built so it
+slots in without changing the data model.
+
 ## Housekeeping
 
 - `public/seed/backfill.json` is a one-time local backfill, gitignored, holding
   real bookkeeping data. It must never be committed.
+- **Dev-server gotcha:** the Next dev server repeatedly served a stale
+  `globals.css` chunk, so newly added CSS silently did not apply and a fixed
+  hydration warning appeared to persist. `rm -rf .next/dev` and restart. This has
+  cost debugging time twice — suspect it whenever a new CSS rule seems ignored.
 - Money is stored as floats and summed in integer cents via `sumEuros`. Storing
   cents directly would remove the class of problem entirely.

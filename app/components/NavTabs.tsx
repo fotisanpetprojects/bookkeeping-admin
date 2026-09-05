@@ -12,6 +12,7 @@ const TABS: { href: string; key: StringKey }[] = [
   { href: '/expenses', key: 'nav.expenses' },
   { href: '/btw-summary', key: 'nav.vatSummary' },
   { href: '/belastingdienst', key: 'nav.belastingdienst' },
+  { href: '/finance', key: 'nav.finance' },
 ];
 
 export default function NavTabs() {

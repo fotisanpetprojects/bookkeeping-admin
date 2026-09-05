@@ -11,6 +11,7 @@ const CARDS: { n: string; href: string; title: StringKey; body: StringKey }[] = 
   { n: '03', href: '/expenses', title: 'nav.expenses', body: 'home.cardExpenses' },
   { n: '04', href: '/btw-summary', title: 'nav.vatSummary', body: 'home.cardVat' },
   { n: '05', href: '/belastingdienst', title: 'nav.belastingdienst', body: 'home.cardBelasting' },
+  { n: '06', href: '/finance', title: 'nav.finance', body: 'home.cardFinance' },
 ];
 
 export default function Home() {

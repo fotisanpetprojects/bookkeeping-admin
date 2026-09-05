@@ -224,6 +224,8 @@ body {
   font-size: 0.9rem;
   outline: none;
 }
+.field-inline { width: auto; }
+
 .field:focus { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
 
 .muted { color: var(--ink-2); }

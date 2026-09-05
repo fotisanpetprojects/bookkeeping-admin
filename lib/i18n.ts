@@ -215,6 +215,84 @@ export const STRINGS = {
   'cl.noClients': { en: 'No client profiles saved yet.', nl: 'Nog geen klantprofielen opgeslagen.' },
 
 
+
+  'nav.finance': { en: 'Money', nl: 'Geld' },
+  'fin.title': { en: 'Money', nl: 'Geld' },
+  'fin.subtitle': {
+    en: 'What comes in, what goes out, and where the year is heading.',
+    nl: 'Wat er binnenkomt, wat eruit gaat, en waar het jaar op uitkomt.',
+  },
+  'fin.import': { en: 'Import a bank statement', nl: 'Bankafschrift importeren' },
+  'fin.importHint': {
+    en: 'A CSV export from your bank. It is read in this browser and never uploaded — nothing leaves your machine.',
+    nl: 'Een CSV-export van je bank. Deze wordt in deze browser gelezen en nooit geüpload — er verlaat niets je machine.',
+  },
+  'fin.imported': {
+    en: 'Imported {added} new transaction(s) from {from} to {to}. {duplicates} already present.',
+    nl: '{added} nieuwe transactie(s) geïmporteerd van {from} tot {to}. {duplicates} al aanwezig.',
+  },
+  'fin.noData': {
+    en: 'No transactions yet. Import a CSV export from your bank to see where your money goes.',
+    nl: 'Nog geen transacties. Importeer een CSV-export van je bank om te zien waar je geld heen gaat.',
+  },
+  'fin.moneyIn': { en: 'Money in', nl: 'Inkomend' },
+  'fin.spending': { en: 'Spending', nl: 'Uitgaven' },
+  'fin.net': { en: 'Left over', nl: 'Overgehouden' },
+  'fin.balance': { en: 'Latest balance', nl: 'Laatste saldo' },
+  'fin.fixed': { en: 'Fixed commitments', nl: 'Vaste lasten' },
+  'fin.flexible': { en: 'Flexible spending', nl: 'Variabele uitgaven' },
+  'fin.perMonth': { en: '{amount} a month on average', nl: 'gemiddeld {amount} per maand' },
+  'fin.coverage': {
+    en: 'Based on {days} days of {year} — the dashed part of the chart is projected from that pace.',
+    nl: 'Gebaseerd op {days} dagen van {year} — het gestippelde deel van de grafiek is daarop gebaseerd.',
+  },
+  'fin.projection': { en: 'Where the year lands', nl: 'Waar het jaar uitkomt' },
+  'fin.cumIn': { en: 'Money in', nl: 'Inkomend' },
+  'fin.cumSpending': { en: 'Spending', nl: 'Uitgaven' },
+  'fin.projectedIn': { en: 'Projected money in', nl: 'Verwacht inkomend' },
+  'fin.projectedSpending': { en: 'Projected spending', nl: 'Verwachte uitgaven' },
+  'fin.projectedNet': { en: 'Projected left over', nl: 'Verwacht overschot' },
+  'fin.breakdown': { en: 'Where the money goes', nl: 'Waar het geld heen gaat' },
+  'fin.breakdownHint': {
+    en: 'Transfers between your own accounts, card repayments and investments are left out — moving money is not spending it.',
+    nl: 'Overboekingen tussen eigen rekeningen, creditcard-aflossingen en beleggingen tellen niet mee — geld verplaatsen is geen uitgave.',
+  },
+  'fin.tidy': { en: 'Tidy up the unknowns', nl: 'Onbekende posten opruimen' },
+  'fin.tidyHint': {
+    en: 'These did not match any rule. Assign a merchant once and every transaction from it is filed, now and in future imports.',
+    nl: 'Deze matchten geen enkele regel. Wijs een winkelier één keer toe en al zijn transacties worden gerubriceerd, nu en bij toekomstige imports.',
+  },
+  'fin.tidyDone': { en: 'Everything is categorised.', nl: 'Alles is gerubriceerd.' },
+  'fin.unknownWarning': {
+    en: '{amount} across {count} transaction(s) is still uncategorised, so the split below is incomplete.',
+    nl: '{amount} verdeeld over {count} transactie(s) is nog niet gerubriceerd, dus de verdeling hieronder is onvolledig.',
+  },
+  'fin.assign': { en: 'Assign', nl: 'Toewijzen' },
+  'fin.transactions': { en: 'transaction(s)', nl: 'transactie(s)' },
+  'fin.clearAll': { en: 'Delete all transactions', nl: 'Alle transacties verwijderen' },
+  'fin.clearConfirm': {
+    en: 'Delete every imported transaction from this browser? Your invoices and expenses are not affected.',
+    nl: 'Alle geïmporteerde transacties uit deze browser verwijderen? Je facturen en uitgaven blijven ongemoeid.',
+  },
+
+  'cat.housing': { en: 'Housing', nl: 'Wonen' },
+  'cat.utilities': { en: 'Utilities', nl: 'Energie & water' },
+  'cat.telecom': { en: 'Phone & internet', nl: 'Telefoon & internet' },
+  'cat.insurance': { en: 'Insurance', nl: 'Verzekeringen' },
+  'cat.groceries': { en: 'Groceries', nl: 'Boodschappen' },
+  'cat.eating-out': { en: 'Eating & drinking out', nl: 'Uit eten & drinken' },
+  'cat.transport': { en: 'Transport & fuel', nl: 'Vervoer & brandstof' },
+  'cat.online-retail': { en: 'Shopping', nl: 'Winkelen' },
+  'cat.subscriptions': { en: 'Subscriptions', nl: 'Abonnementen' },
+  'cat.health': { en: 'Health & care', nl: 'Zorg' },
+  'cat.sports-hobbies': { en: 'Sports & hobbies', nl: 'Sport & hobby' },
+  'cat.government': { en: 'Tax & government', nl: 'Belasting & overheid' },
+  'cat.cash': { en: 'Cash withdrawals', nl: 'Contant opgenomen' },
+  'cat.investments': { en: 'Investments', nl: 'Beleggingen' },
+  'cat.transfers': { en: 'Transfers', nl: 'Overboekingen' },
+  'cat.income': { en: 'Income', nl: 'Inkomsten' },
+  'cat.unknown': { en: 'Unknown', nl: 'Onbekend' },
+
   'home.eyebrow': { en: 'Bookkeeping Admin', nl: 'Bookkeeping Admin' },
   'home.headline': {
     en: 'Keep your invoices, receipts and quarterly BTW under control.',
@@ -233,6 +311,10 @@ export const STRINGS = {
   'home.cardVat': { en: 'Net VAT per quarter, and what is still to pay.', nl: 'Netto BTW per kwartaal, en wat er nog te betalen is.' },
   'home.cardBelasting': { en: 'The tax year in full: receivables, VAT, and income tax to year end.', nl: 'Het hele belastingjaar: openstaand, BTW en inkomstenbelasting tot jaareinde.' },
 
+  'home.cardFinance': {
+    en: 'Import your bank statement and see where your money actually goes.',
+    nl: 'Importeer je bankafschrift en zie waar je geld werkelijk heen gaat.',
+  },
   'backup.title': { en: 'Backup & restore', nl: 'Back-up & herstel' },
   'backup.intro': {
     en: 'Everything is stored only in this browser. Clearing site data, switching browsers or using a different profile loses it. Export a backup regularly.',

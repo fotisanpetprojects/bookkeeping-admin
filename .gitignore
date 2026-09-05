@@ -42,3 +42,7 @@ next-env.d.ts
 
 # Local bookkeeping seed data — private, never committed
 /public/seed/
+
+# Bank statement exports — private, never committed
+*.csv
+!public/screenshots/*.csv
