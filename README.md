@@ -29,6 +29,7 @@ That tradeoff keeps the product lightweight, inexpensive to run, and well scoped
 - `Profiles`: reusable sender and client billing details, including a letterhead
 - `Expenses`: log costs, VAT rates and receipts, filtered by year
 - `VAT Summary`: net BTW per quarter, with each quarter markable as filed and paid so the headline shows what is *still* owed
+- `Money`: import a bank CSV, see where spending actually goes, and where the year lands — parsed in the browser, never uploaded
 - `Belastingdienst`: the whole tax year — receivables, VAT, an income tax estimate with every step shown, and a projection to 31 December
 - `Language`: full NL/EN switch; English shows Dutch tax terms alongside, since those are the words on the actual forms
 - `Theme`: light and dark, following your system by default with a manual override
@@ -53,6 +54,11 @@ using a different browser profile will lose everything.
 An optional `public/seed/backfill.json` (gitignored) is applied once on first load, so a
 prepared set of books can be loaded without hand entry. It holds real bookkeeping data
 and must never be committed.
+
+Bank statements are parsed in the browser and stored locally like everything else;
+nothing is uploaded. The free-text notification field is dropped on import because it
+carries partial card numbers. `*.csv` is gitignored so an export cannot be committed
+by accident.
 
 The AI import panel currently keeps its API key in `localStorage`. That is acceptable on
 a personal machine and **not** acceptable hosted — moving extraction behind a server
@@ -79,6 +85,15 @@ mark paid inline, and read the column totals in the closing row.
 
 ![Invoice table with selection, status chips and a totals row](public/screenshots/invoices.png)
 
+### Money
+
+Import a bank statement and the year is laid out: what came in, what went out,
+what is committed versus flexible, and where 31 December lands. What the rules
+cannot place is grouped by merchant, so one decision files every transaction from
+it.
+
+![Money page showing spending breakdown and a projection to year end](public/screenshots/money.png)
+
 ### Belastingdienst
 
 The tax year in one view — receivables, net VAT per quarter, and a projection to
@@ -96,6 +111,7 @@ mode; the app follows your system setting and can be overridden.
 │   ├── btw-summary/page.tsx      Quarterly VAT, with settled-quarter tracking
 │   ├── clients/page.tsx          Billing profile management
 │   ├── expenses/page.tsx         Expense and receipt tracking
+│   ├── finance/page.tsx          Bank import, spending breakdown, year projection
 │   ├── invoices/page.tsx         Invoice builder, preview and PDF export
 │   ├── components/
 │   │   ├── AiImportPanel.tsx     AI-assisted import (preview; provider not wired)
@@ -111,7 +127,10 @@ mode; the app follows your system setting and can be overridden.
 ├── lib/
 │   ├── ai-import.ts              Extraction contract and provider seam
 │   ├── backup.ts                 Backup export, validation and restore
+│   ├── bank.ts                   Bank CSV parsing, dedupe and merge
 │   ├── billing.ts                Shared billing types and money helpers
+│   ├── categories.ts             Spending categories and the rules that assign them
+│   ├── finance.ts                Spending aggregation and year projection
 │   ├── i18n.ts                   NL/EN dictionary
 │   ├── local-storage.ts          Local storage state hook
 │   └── tax.ts                    ZZP income tax estimate and BTW deadlines
@@ -200,12 +219,13 @@ Invoices and BTW are one corner of a freelancer's finances. The same local-first
 privacy-conscious foundation extends naturally to the rest of it, as separate tabs
 over a shared ledger:
 
-- **Bank statements** — import a `bankafschrift` (CSV/MT940/CAMT), match transactions
-  against invoices and expenses automatically, and flag what is unreconciled. This is
-  the single biggest reduction in manual entry, and it is what the AI import seam is
-  really for.
-- **Expense intelligence** — categorise spending from the statement, separate business
-  from private, and surface what is deductible that is currently being missed.
+- **Bank statements** — ✅ CSV import works today, parsed in the browser. Still to do:
+  MT940/CAMT, PDF statements, and matching transactions against invoices so unpaid
+  work reconciles itself.
+- **Expense intelligence** — ✅ categorisation ships with rules covering roughly 93% of
+  value on a real statement. Still to do: the business/private flag that would push a
+  deductible cost straight into the tax picture, and AI for the long tail of small
+  local merchants that no rule list can cover.
 - **Mortgage and debt** — hold the mortgage, its rate and remaining term; show interest
   paid per year, which feeds the income tax picture (`eigenwoningforfait`, mortgage
   interest deduction).
