@@ -23,6 +23,7 @@ export default function BackupPanel() {
   const [clientProfiles] = useLocalStorageState<ClientProfile[]>('client-profiles', []);
   const [invoices] = useLocalStorageState<StoredInvoice[]>('invoices', []);
   const [expenses] = useLocalStorageState<Expense[]>('expenses', []);
+  const [transactions] = useLocalStorageState<{ id: string }[]>('bank-transactions', []);
 
   const [pendingBackup, setPendingBackup] = useState<BackupPayload | null>(null);
   const [pendingFileName, setPendingFileName] = useState('');
@@ -36,7 +37,8 @@ export default function BackupPanel() {
     businessProfiles.length > 0 ||
     clientProfiles.length > 0 ||
     invoices.length > 0 ||
-    expenses.length > 0;
+    expenses.length > 0 ||
+    transactions.length > 0;
 
   const pendingCounts = useMemo(() => {
     return pendingBackup ? describeBackup(pendingBackup.data) : null;
@@ -131,8 +133,8 @@ export default function BackupPanel() {
           </p>
           <p className="mt-2 text-sm faint">
             {t('backup.stored')}{' '}{invoices.length} invoice(s) · {expenses.length} expense(s) ·{' '}
-            {clientProfiles.length} client profile(s) · {businessProfiles.length} business
-            profile(s)
+            {transactions.length} bank transaction(s) · {clientProfiles.length} client
+            profile(s) · {businessProfiles.length} business profile(s)
           </p>
         </div>
 
@@ -162,6 +164,7 @@ export default function BackupPanel() {
             <div className="text-sm muted">
               <span className="font-medium">{pendingFileName}</span> contains{' '}
               {pendingCounts.invoices} invoice(s), {pendingCounts.expenses} expense(s),{' '}
+              {pendingCounts.transactions} bank transaction(s),{' '}
               {pendingCounts.clientProfiles} client profile(s) and{' '}
               {pendingCounts.businessProfiles} business profile(s)
               {pendingBackup.exportedAt

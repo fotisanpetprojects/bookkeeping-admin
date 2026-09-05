@@ -18,6 +18,9 @@ export const BACKUP_KEYS = [
   'client-profiles',
   'invoices',
   'expenses',
+  // Imported bank transactions, including any category corrected by hand. Left
+  // out, a backup would quietly drop the whole Money tab when restored.
+  'bank-transactions',
 ] as const;
 
 export type BackupKey = (typeof BACKUP_KEYS)[number];
@@ -34,6 +37,7 @@ export type BackupCounts = {
   clientProfiles: number;
   invoices: number;
   expenses: number;
+  transactions: number;
 };
 
 function countArray(value: unknown) {
@@ -46,6 +50,7 @@ export function describeBackup(data: Partial<Record<BackupKey, unknown>>): Backu
     clientProfiles: countArray(data['client-profiles']),
     invoices: countArray(data['invoices']),
     expenses: countArray(data['expenses']),
+    transactions: countArray(data['bank-transactions']),
   };
 }
 
@@ -251,6 +256,7 @@ export function applyBackup(payload: BackupPayload, mode: RestoreMode): RestoreR
       clientProfiles: after.clientProfiles - before.clientProfiles,
       invoices: after.invoices - before.invoices,
       expenses: after.expenses - before.expenses,
+      transactions: after.transactions - before.transactions,
     },
   };
 }
