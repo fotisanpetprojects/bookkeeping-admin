@@ -57,18 +57,16 @@ export default function NavTabs() {
         aria-label={t('nav.settings')}
         title={t('nav.settings')}
         className={
-          isCurrent('/settings')
-            ? 'btn btn-icon shrink-0 border-[var(--accent-line)] bg-[var(--accent-soft)] text-[var(--accent)]'
-            : 'btn btn-icon shrink-0'
+          isCurrent('/settings') ? 'nav-gear shrink-0 is-current' : 'nav-gear shrink-0'
         }
       >
-        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden>
-          <circle cx="10" cy="10" r="2.6" stroke="currentColor" strokeWidth="1.5" />
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="12" cy="12" r="3.1" stroke="currentColor" strokeWidth="1.6" />
           <path
-            d="M10 2.6v1.7M10 15.7v1.7M17.4 10h-1.7M4.3 10H2.6M15.2 4.8l-1.2 1.2M6 14l-1.2 1.2M15.2 15.2L14 14M6 6L4.8 4.8"
+            d="M19.1 14.4a1.5 1.5 0 0 0 .3 1.65l.06.05a1.8 1.8 0 1 1-2.55 2.55l-.05-.06a1.5 1.5 0 0 0-1.65-.3 1.5 1.5 0 0 0-.91 1.37v.16a1.8 1.8 0 1 1-3.6 0v-.09a1.5 1.5 0 0 0-.98-1.37 1.5 1.5 0 0 0-1.65.3l-.05.06A1.8 1.8 0 1 1 4.47 16.1l.06-.05a1.5 1.5 0 0 0 .3-1.65 1.5 1.5 0 0 0-1.37-.91h-.16a1.8 1.8 0 1 1 0-3.6h.09a1.5 1.5 0 0 0 1.37-.98 1.5 1.5 0 0 0-.3-1.65l-.06-.05A1.8 1.8 0 1 1 6.95 4.66l.05.06a1.5 1.5 0 0 0 1.65.3h.07a1.5 1.5 0 0 0 .91-1.37v-.16a1.8 1.8 0 1 1 3.6 0v.09a1.5 1.5 0 0 0 .91 1.37 1.5 1.5 0 0 0 1.65-.3l.05-.06a1.8 1.8 0 1 1 2.55 2.55l-.06.05a1.5 1.5 0 0 0-.3 1.65v.07a1.5 1.5 0 0 0 1.37.91h.16a1.8 1.8 0 1 1 0 3.6h-.09a1.5 1.5 0 0 0-1.37.91z"
             stroke="currentColor"
             strokeWidth="1.5"
-            strokeLinecap="round"
+            strokeLinejoin="round"
           />
         </svg>
       </Link>

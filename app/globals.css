@@ -241,6 +241,22 @@ select.field {
   background-size: 1.05rem 1.05rem;
 }
 
+/*
+ * Settings is a bare gear, not a button. Boxing it put a smaller pill next to the
+ * text tabs, which read as a mismatched control rather than a quieter one.
+ */
+.nav-gear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  border-radius: var(--radius-sm);
+  color: var(--ink-3);
+  transition: color 120ms ease;
+}
+.nav-gear:hover { color: var(--ink); }
+.nav-gear.is-current { color: var(--accent); }
+
 /* Tabs scroll sideways instead of wrapping, so the header stays one row. */
 .nav-scroll {
   overflow-x: auto;
