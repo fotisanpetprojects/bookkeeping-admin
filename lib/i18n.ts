@@ -362,6 +362,31 @@ export const STRINGS = {
   'vault.usePassphrase': { en: 'Use my passphrase instead', nl: 'Toch mijn wachtwoordzin gebruiken' },
   'vault.recoveryCode': { en: 'Recovery code', nl: 'Herstelcode' },
 
+  'acc.title': { en: 'Your bank accounts', nl: 'Je bankrekeningen' },
+  'acc.body': {
+    en: 'Name each imported account and say what it is for. Business income is revenue you invoice; personal income is what you actually pay yourself. Money moving between two of your own accounts is never counted as either.',
+    nl: 'Geef elke geïmporteerde rekening een naam en geef aan waarvoor die is. Zakelijke inkomsten zijn omzet die je factureert; privé-inkomsten zijn wat je jezelf uitbetaalt. Geld tussen twee eigen rekeningen telt nooit als een van beide.',
+  },
+  'acc.none': {
+    en: 'No accounts yet. Import a bank statement on the Finance page first.',
+    nl: 'Nog geen rekeningen. Importeer eerst een bankafschrift op de Financiën-pagina.',
+  },
+  'acc.name': { en: 'Name', nl: 'Naam' },
+  'acc.namePlaceholder': { en: 'e.g. Personal current account', nl: 'bijv. Privé betaalrekening' },
+  'acc.kind': { en: 'Used for', nl: 'Gebruikt voor' },
+  'acc.personal': { en: 'Personal', nl: 'Privé' },
+  'acc.business': { en: 'Business', nl: 'Zakelijk' },
+  'acc.transactions': { en: '{count} transaction(s)', nl: '{count} transactie(s)' },
+
+  'fin.allAccountsOption': { en: 'All accounts', nl: 'Alle rekeningen' },
+  'fin.personalOnly': { en: 'Personal only', nl: 'Alleen privé' },
+  'fin.businessOnly': { en: 'Business only', nl: 'Alleen zakelijk' },
+  'fin.internal': { en: 'From your other accounts', nl: 'Van je andere rekeningen' },
+  'fin.internalHint': {
+    en: '{amount} arrived here from another account of yours across {count} transfer(s). It is shown because the money did arrive, and left out of income because you did not earn it twice.',
+    nl: '{amount} kwam hier binnen vanaf een eigen rekening in {count} overboeking(en). Het staat er omdat het geld wél binnenkwam, en telt niet mee als inkomsten omdat je het niet twee keer hebt verdiend.',
+  },
+
   'fin.incoming': { en: 'Where the money comes from', nl: 'Waar het geld vandaan komt' },
   'fin.incomingHint': {
     en: 'Money in, by payer. Transfers between your own accounts are left out.',
