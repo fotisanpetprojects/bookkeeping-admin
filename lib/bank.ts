@@ -131,8 +131,11 @@ function parseAmount(raw: string): number | null {
  * Account numbers are compared, not displayed, so spacing and case must not decide
  * whether two references to the same account match.
  */
-export function normaliseAccount(value: string) {
-  return value.replace(/\s+/g, '').toUpperCase();
+export function normaliseAccount(value: string | undefined | null) {
+  // Transactions imported before the account and counterparty fields existed have
+  // neither. They are still perfectly good records, so this has to tolerate their
+  // absence rather than take the page down.
+  return (value ?? '').replace(/\s+/g, '').toUpperCase();
 }
 
 /** Accepts yyyymmdd, yyyy-mm-dd and dd-mm-yyyy. */
@@ -280,9 +283,20 @@ export function mergeTransactions(existing: BankTransaction[], incoming: BankTra
       continue;
     }
 
-    if (!current.manualCategory) {
-      byId.set(transaction.id, { ...transaction, business: current.business });
+    if (current.manualCategory) {
+      // Keep the decision, take everything else fresh. Keeping the whole old row
+      // would preserve the category but strand it without fields added since it was
+      // imported — which is how a re-import silently fails to fix anything.
+      byId.set(transaction.id, {
+        ...transaction,
+        category: current.category,
+        manualCategory: true,
+        business: current.business,
+      });
+      continue;
     }
+
+    byId.set(transaction.id, { ...transaction, business: current.business });
   }
 
   const merged = [...byId.values()].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));

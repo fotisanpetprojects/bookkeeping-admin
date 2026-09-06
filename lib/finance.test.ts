@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import type { BankTransaction } from './bank.ts';
+import { type BankTransaction, mergeTransactions } from './bank.ts';
 import { detectRecurring, isFixedCommitment, markInternalTransfers, summarise } from './finance.ts';
 
 const BUSINESS = 'NL00BUSI0000000001';
@@ -106,6 +106,44 @@ test('a merchant visited often on a card is not a commitment', () => {
 
   const recurring = detectRecurring(barber);
   assert.ok(!isFixedCommitment(barber[0], recurring), 'a card payment stays discretionary');
+});
+
+test('re-importing keeps categories set by hand, and still fills in new fields', () => {
+  // The exact situation after an upgrade: rows already filed by hand, imported
+  // before the counterparty field existed, and the same statement imported again.
+  const alreadyFiled = [
+    {
+      ...tx({ date: '2026-02-01', amount: -25, description: 'CCV*HET LANGE MES', account: PERSONAL }),
+      category: 'eating-out' as const,
+      manualCategory: true,
+      counterparty: undefined as unknown as string,
+    },
+  ];
+
+  const freshImport = [
+    tx({ date: '2026-02-01', amount: -25, description: 'CCV*HET LANGE MES', account: PERSONAL, counterparty: 'NL33SHOP0000000033' }),
+  ];
+
+  const { merged, added } = mergeTransactions(alreadyFiled, freshImport);
+
+  assert.equal(added, 0, 're-importing the same statement adds nothing');
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].category, 'eating-out', 'the hand-set category survives');
+  assert.equal(merged[0].manualCategory, true);
+  assert.equal(merged[0].counterparty, 'NL33SHOP0000000033', 'and the row gains the new field');
+});
+
+test('rows imported before accounts existed do not break anything', () => {
+  // No account, no counterparty — the shape stored by an earlier version.
+  const old = [
+    { ...tx({ date: '2026-01-05', amount: -30, category: 'groceries' }), account: undefined as unknown as string, counterparty: undefined as unknown as string },
+    { ...tx({ date: '2026-01-06', amount: 900, category: 'income' }), account: undefined as unknown as string, counterparty: undefined as unknown as string },
+  ];
+
+  assert.doesNotThrow(() => markInternalTransfers(old));
+  const summary = summarise(markInternalTransfers(old), 2026);
+  assert.equal(summary.moneyIn, 900);
+  assert.equal(summary.spending, 30);
 });
 
 test('the year is projected on days covered, not months seen', () => {

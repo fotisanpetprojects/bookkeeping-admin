@@ -167,7 +167,10 @@ export function markInternalTransfers(transactions: BankTransaction[]) {
 
   return transactions.map((transaction) => {
     if (transaction.manualCategory) return transaction;
-    if (!transaction.counterparty || !mine.has(transaction.counterparty)) return transaction;
+    // Normalised on both sides, and tolerant of rows imported before the field
+    // existed — those simply have no counterparty and stay as they are.
+    const other = normaliseAccount(transaction.counterparty);
+    if (!other || !mine.has(other)) return transaction;
 
     return { ...transaction, category: 'transfers' as CategoryId, internalTransfer: true };
   });
