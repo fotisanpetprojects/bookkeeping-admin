@@ -226,6 +226,29 @@ body {
 }
 .field-inline { width: auto; }
 
+/*
+ * The native select arrow sits hard against the right edge and ignores the padding
+ * the field sets, so it read as misaligned next to every other control. Drawing it
+ * ourselves puts it on the same optical margin as the text.
+ */
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none'%3E%3Cpath d='M5.5 8L10 12.5L14.5 8' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 1.05rem 1.05rem;
+}
+
+/* Tabs scroll sideways instead of wrapping, so the header stays one row. */
+.nav-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.nav-scroll::-webkit-scrollbar { display: none; }
+
 .field:focus { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
 
 .muted { color: var(--ink-2); }

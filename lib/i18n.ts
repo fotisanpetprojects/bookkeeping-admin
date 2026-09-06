@@ -23,7 +23,7 @@ export const STRINGS = {
   'nav.profiles': { en: 'Profiles', nl: 'Profielen' },
   'nav.expenses': { en: 'Expenses', nl: 'Uitgaven' },
   'nav.vatSummary': { en: 'VAT Summary', nl: 'BTW-overzicht' },
-  'nav.belastingdienst': { en: 'Belastingdienst', nl: 'Belastingdienst' },
+  'nav.belastingdienst': { en: 'Tax office', nl: 'Belastingdienst' },
 
   'common.vat': { en: 'VAT', nl: 'BTW' },
   'common.year': { en: 'Year', nl: 'Jaar' },
@@ -76,7 +76,7 @@ export const STRINGS = {
     nl: 'Bedragen zijn gebaseerd op de ingevoerde factuur- en uitgavendatums. Verlegde BTW, KOR en intracommunautaire leveringen zijn niet meegenomen — controleer die gevallen zelf vóór de aangifte.',
   },
 
-  'bd.title': { en: 'Belastingdienst', nl: 'Belastingdienst' },
+  'bd.title': { en: 'Tax office', nl: 'Belastingdienst' },
   'bd.subtitle': {
     en: 'What you have earned, what you still have to collect, and what the year ends at.',
     nl: 'Wat je hebt verdiend, wat je nog moet ontvangen, en waar het jaar op uitkomt.',
@@ -93,6 +93,14 @@ export const STRINGS = {
   'bd.netVatYear': { en: 'Net VAT for the year', nl: 'Netto BTW over het jaar' },
   'bd.revenueCentre': { en: 'Revenue', nl: 'Omzet' },
   'bd.revenueSplit': { en: 'Where the revenue goes', nl: 'Waar de omzet heen gaat' },
+  'bd.revenueSplitHint': {
+    en: 'Your {year} invoiced revenue ex VAT, split by what leaves again. VAT is not shown here — it is collected on the tax office\'s behalf, so it was never your revenue. It has its own figure above.',
+    nl: 'Je gefactureerde omzet excl. BTW over {year}, verdeeld naar wat er weer afgaat. BTW staat hier niet bij — die wordt geïnd voor de Belastingdienst en was dus nooit jouw omzet. Die heeft hierboven een eigen bedrag.',
+  },
+  'bd.lossYear': {
+    en: 'Expenses of {expenses} exceed revenue of {revenue}, so {year} is a loss of {loss}. There is nothing to split up, and no income tax is estimated on a loss.',
+    nl: 'Kosten van {expenses} zijn hoger dan de omzet van {revenue}, dus {year} is een verlies van {loss}. Er valt niets te verdelen, en over verlies wordt geen inkomstenbelasting geschat.',
+  },
   'bd.takeHome': { en: 'Take-home (est.)', nl: 'Netto over (schatting)' },
   'bd.incomeTaxEst': { en: 'Income tax (est.)', nl: 'Inkomstenbelasting (schatting)' },
   'bd.businessExpenses': { en: 'Business expenses', nl: 'Zakelijke kosten' },

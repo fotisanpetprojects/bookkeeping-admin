@@ -364,17 +364,15 @@ export default function BelastingdienstPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="card p-6">
           <h2 className="text-xl font-semibold">{t('bd.revenueSplit')}</h2>
-          <p className="mt-1 mb-4 text-sm muted">
-            Your {year} invoiced revenue ex VAT, split by what leaves again. BTW is not
-            shown here — it is collected for the Belastingdienst, so it was never your
-            revenue. It has its own figure above.
-          </p>
+          <p className="mt-1 mb-4 text-sm muted">{t('bd.revenueSplitHint', { year })}</p>
           {data.taxToDate.profit < 0 ? (
             <div className="panel p-5 text-sm muted">
-              Expenses of {formatCurrency(data.expensesExVat)} exceed revenue of{' '}
-              {formatCurrency(data.revenueExVat)}, so {year} is a loss of{' '}
-              {formatCurrency(Math.abs(data.taxToDate.profit))}. There is nothing to split
-              up, and no income tax is estimated on a loss.
+              {t('bd.lossYear', {
+                expenses: formatCurrency(data.expensesExVat),
+                revenue: formatCurrency(data.revenueExVat),
+                year,
+                loss: formatCurrency(Math.abs(data.taxToDate.profit)),
+              })}
             </div>
           ) : (
             <Donut
