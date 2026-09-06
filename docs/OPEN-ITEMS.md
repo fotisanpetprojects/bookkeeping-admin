@@ -4,6 +4,15 @@ Known gaps and deliberate debt, kept here so they are not rediscovered later.
 Ordered by what should be done first. The product direction lives in the README
 roadmap; this file is the engineering backlog behind it.
 
+## Recently closed
+
+**Encryption at rest** — a passphrase now encrypts everything in the browser, with a
+recovery code as the only other way in. See `docs/SECURITY.md`. This also removes the
+"anyone at your unlocked laptop reads your books" exposure.
+
+**Tests exist now**, but only for the crypto (`lib/crypto.test.ts`, `npm test`). The
+tax chain, the backup merge and the bank parser are still uncovered — see below.
+
 ## Blocking a hosted launch
 
 **Move AI extraction behind a server route.**
@@ -13,16 +22,20 @@ read it. This blocks the whole wealth roadmap: asking people for bank data on a
 frontend that holds keys in browser storage is not defensible. Do this before
 adding features on top of the seam.
 
-**No authentication or backend.** Fine while local-first, mandatory before the
-bank-statement work is offered to anyone but the author.
+**No sync, and no account identity.** The vault is per-browser, so laptop and phone
+hold separate books and moving between them is a manual export and restore. The
+encrypted blob is already the right shape to sync; what is missing is somewhere to put
+it and an identity to put it under. Whatever is chosen must only ever receive
+ciphertext — the server should not be able to read what it stores.
 
 ## Correctness
 
-**There are no tests.** The VAT quarter maths, the ZZP tax chain, the backup merge
-dedupe, and the money helpers were verified by driving a browser — none of which
-survives a refactor. `lib/tax.ts`, `lib/backup.ts` and `lib/billing.ts` are pure
-and would take about an hour to cover. Two real bugs of exactly this class have
-already shipped and been caught by hand:
+**Most logic is still untested.** The crypto is covered; the VAT quarter maths, the
+ZZP tax chain, the backup merge dedupe, the bank parser and the money helpers are not.
+They were verified by driving a browser, which does not survive a refactor. `lib/tax.ts`,
+`lib/backup.ts`, `lib/bank.ts` and `lib/billing.ts` are pure and the harness now exists,
+so each is a short file away. Two real bugs of exactly this class have already shipped
+and been caught by hand:
 - the storage layer reported a save that never reached disk
 - a filing deadline rendered a day early because a local date was converted to UTC
 
@@ -48,7 +61,11 @@ is fully NL/EN, but the printed invoice is deliberately left fixed: flipping the
 app to Dutch to read your own books must not change what a client's PDF says.
 Belongs on the client profile.
 
-**README screenshots predate the light/dark restyle** and the Belastingdienst tab.
+**The vault screens are functional, not designed.** No passphrase strength hint,
+errors are plain red text, and the lock screen gives no sense of whose vault it is.
+They are the first thing a new user meets.
+
+**The Finance screenshot predates the income panel.**
 
 ## Bank import (new)
 

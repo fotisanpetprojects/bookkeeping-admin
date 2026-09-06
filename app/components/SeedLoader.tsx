@@ -7,6 +7,7 @@ import {
   parseBackup,
 } from '@/lib/backup';
 import { captureRawValue, readStoredJson, writeStoredJson } from '@/lib/local-storage';
+import { vaultExists } from '@/lib/vault';
 
 /**
  * One-time local backfill.
@@ -79,6 +80,13 @@ export default function SeedLoader() {
 
     const run = async () => {
       try {
+        // Once a vault exists the seed has no business running: it would either
+        // write plaintext beside the encrypted copy, or overwrite real books that
+        // are merely locked rather than absent.
+        if (vaultExists()) {
+          return;
+        }
+
         if (window.localStorage.getItem(APPLIED_KEY) === SEED_VERSION) {
           // The seed already ran; the logo it overwrote may still need putting back.
           restoreLetterheadFromSnapshot();

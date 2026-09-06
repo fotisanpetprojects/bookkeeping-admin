@@ -3,6 +3,7 @@ import Link from 'next/link';
 import NavTabs from '@/app/components/NavTabs';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import SeedLoader from '@/app/components/SeedLoader';
+import VaultGate from '@/app/components/VaultGate';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export default function RootLayout({
       <body className="min-h-screen">
         <div className="min-h-screen">
           <SeedLoader />
+          <VaultGate>
           <header className="app-header">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
               <Link href="/" className="text-xl font-semibold tracking-tight">
@@ -39,6 +41,7 @@ export default function RootLayout({
           </header>
 
           <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+          </VaultGate>
 
           <ThemeToggle className="theme-dock" />
         </div>

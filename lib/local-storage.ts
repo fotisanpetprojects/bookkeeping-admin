@@ -2,6 +2,8 @@
 
 import { Dispatch, SetStateAction, useRef, useSyncExternalStore } from 'react';
 
+import { vaultDelete, vaultGet, vaultSet } from '@/lib/vault';
+
 const LOCAL_STORAGE_EVENT = 'local-storage-change';
 const snapshotCache = new Map<string, { raw: string | null; parsed: unknown }>();
 
@@ -38,7 +40,10 @@ function readStoredValue<T>(key: string, fallback: T) {
     return fallback;
   }
 
-  const raw = window.localStorage.getItem(key);
+  // While the vault is open its contents stand in for localStorage, so no page has
+  // to know whether the records it is reading are encrypted at rest.
+  const vaulted = vaultGet(key);
+  const raw = vaulted === undefined ? window.localStorage.getItem(key) : vaulted;
   const cached = snapshotCache.get(key);
 
   if (cached && cached.raw === raw) {
@@ -93,6 +98,14 @@ function writeStoredValue<T>(key: string, value: T) {
   }
 
   const raw = JSON.stringify(value);
+
+  // An open vault takes the write instead; persisting it is its business, and it
+  // re-encrypts on a debounce rather than on every keystroke.
+  if (vaultSet(key, raw)) {
+    snapshotCache.set(key, { raw, parsed: value });
+    window.dispatchEvent(new CustomEvent(LOCAL_STORAGE_EVENT, { detail: { key } }));
+    return;
+  }
 
   // Write to disk *before* touching the snapshot cache. If setItem throws we
   // must not leave the cache holding a value that was never persisted, or the
@@ -170,7 +183,12 @@ export function restoreRawValue(key: string, raw: string | null) {
     return;
   }
 
-  if (raw === null) {
+  // A rollback has to land wherever the value came from. Writing plaintext to
+  // localStorage while a vault is open would undo the encryption for that key.
+  if (vaultGet(key) !== undefined) {
+    if (raw === null) vaultDelete(key);
+    else vaultSet(key, raw);
+  } else if (raw === null) {
     window.localStorage.removeItem(key);
   } else {
     window.localStorage.setItem(key, raw);
@@ -186,5 +204,6 @@ export function captureRawValue(key: string) {
     return null;
   }
 
-  return window.localStorage.getItem(key);
+  const vaulted = vaultGet(key);
+  return vaulted === undefined ? window.localStorage.getItem(key) : vaulted;
 }

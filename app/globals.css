@@ -367,3 +367,23 @@ body {
 /* Centred confirmation, reusing the drawer's scrim. */
 .drawer-root:has(.confirm-panel) { align-items: center; justify-content: center; }
 .confirm-panel { position: relative; width: min(26rem, calc(100% - 2rem)); }
+
+/* Full-screen gate shown while the vault is locked or being created. */
+.vault-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--bg);
+  overflow-y: auto;
+}
+.lock-button {
+  position: fixed;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 40;
+  box-shadow: var(--shadow-raised);
+}
