@@ -206,12 +206,28 @@ The simplest deployment path is Vercel. The app works well as a public demo beca
 
 ## Roadmap
 
-### Near term
+### Near term — in this order
 
-- wire the AI import provider call behind a **server route**, so an API key never sits in the browser
-- retire the rigid JSON backup/restore in favour of that import once it is reliable
-- per-client invoice language, independent of the interface language
-- verify the 2026 tax rates that currently ship as editable defaults
+**1. Accounts and login.** The next thing to build. Today the app has no notion of a
+user: whoever opens the browser sees whatever that browser holds. That is fine for one
+person on one machine and blocks everything else — using it on a phone as well as a
+laptop, or letting anyone else use it at all.
+
+The approach is end-to-end encryption rather than an ordinary account system: a
+passphrase derives a key in the browser, records are encrypted before they are sent,
+and the server stores ciphertext it cannot read. That keeps the promise this project
+started with — the data belongs to the person who entered it — while making sync
+possible. It also means a breach exposes noise rather than anyone's finances.
+
+**2. AI import, after that.** Extraction moves behind a server route so the API key
+never sits in the browser, which also closes the standing security gap. That unlocks
+categorising the long tail of small local merchants no rule list can cover, and PDF
+statements. It is deliberately second: an AI feature on top of an app with no accounts
+would be building the roof before the walls.
+
+**3. Then:** MT940/CAMT imports, matching bank transactions against invoices so unpaid
+work reconciles itself, and the business/private flag that pushes a deductible cost
+straight into the tax picture.
 
 ### Where this is heading: personal financial admin, not just bookkeeping
 

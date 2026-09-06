@@ -308,3 +308,58 @@ body {
 /* A selected row is tinted so the selection is visible while scanning. */
 .data-table tbody tr.row-selected td { background: var(--accent-soft); }
 .data-table tbody tr.row-selected:hover td { background: var(--accent-soft); }
+
+/* Slide-over used to show the transactions behind a figure. */
+.drawer-root { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: flex-end; }
+.drawer-scrim {
+  position: absolute; inset: 0; border: 0; padding: 0; cursor: default;
+  background: color-mix(in srgb, #000 45%, transparent);
+  backdrop-filter: blur(2px);
+}
+.drawer-panel {
+  position: relative; display: flex; flex-direction: column;
+  width: min(30rem, 100%); height: 100%;
+  background: var(--surface); border-left: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-raised);
+  animation: drawer-in 160ms ease-out;
+}
+@keyframes drawer-in { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .drawer-panel { animation: none; } }
+
+/* One shared column template so every bar track starts and ends on the same x. */
+.category-row {
+  display: grid;
+  /* Label capped so the track — the thing being compared — gets the room. */
+  grid-template-columns: minmax(96px, 13rem) 1fr 9.5rem;
+  grid-template-areas: "label track value";
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.category-row > :nth-child(1) { grid-area: label; }
+.category-row > :nth-child(2) { grid-area: track; }
+.category-row > :nth-child(3) { grid-area: value; }
+.category-row:hover { background: var(--surface-sunken); }
+
+/*
+ * Below ~560px three columns leave the bar a few pixels wide, which is worse than
+ * useless. Stack instead: name and amount share a line, the bar gets the full width
+ * underneath, and bars still align because every row is laid out identically.
+ */
+@media (max-width: 560px) {
+  .category-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "label value"
+      "track track";
+    row-gap: 0.35rem;
+    padding-bottom: 0.55rem;
+  }
+}

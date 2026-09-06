@@ -385,6 +385,8 @@ export function ProjectionChart({
 }
 
 export type CategoryBar = {
+  /** The category this bar stands for, so a click can filter by it. */
+  id?: string;
   label: string;
   value: number;
   share: number;
@@ -398,10 +400,11 @@ export type CategoryBar = {
  * thing colour encodes is the one split that is actually binary — a commitment
  * you cannot easily change this month versus spending you can.
  */
-export function CategoryBars({ bars, fixedLabel, flexibleLabel }: {
+export function CategoryBars({ bars, fixedLabel, flexibleLabel, onSelect }: {
   bars: CategoryBar[];
   fixedLabel: string;
   flexibleLabel: string;
+  onSelect?: (bar: CategoryBar) => void;
 }) {
   const { t } = useT();
 
@@ -424,29 +427,33 @@ export function CategoryBars({ bars, fixedLabel, flexibleLabel }: {
         </span>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="space-y-1">
         {bars.map((bar) => (
-          <div key={bar.label} className="grid grid-cols-[minmax(96px,1.1fr)_3fr_auto] items-center gap-3">
-            <div className="truncate text-sm" title={bar.label}>
+          <button
+            key={bar.label}
+            onClick={() => onSelect?.(bar)}
+            className="category-row"
+            title={onSelect ? `${bar.count} · ${bar.label}` : undefined}
+          >
+            <span className="truncate text-left text-sm" title={bar.label}>
               {bar.label}
-            </div>
+            </span>
 
-            <div className="h-5 rounded-[4px]" style={{ background: 'var(--surface-sunken)' }}>
-              <div
-                className="h-5 rounded-[4px]"
+            <span className="block h-5 rounded-[4px]" style={{ background: 'var(--surface-sunken)' }}>
+              <span
+                className="block h-5 rounded-[4px]"
                 style={{
                   width: `${Math.max(1.5, (bar.value / max) * 100)}%`,
                   background: bar.fixed ? 'var(--series-1)' : 'var(--series-2)',
                 }}
-                title={`${bar.count} transaction(s)`}
               />
-            </div>
+            </span>
 
-            <div className="whitespace-nowrap text-right text-sm tabular-nums">
+            <span className="whitespace-nowrap text-right text-sm tabular-nums">
               <span className="font-medium">{formatCurrency(bar.value)}</span>
               <span className="ml-2 faint">{(bar.share * 100).toFixed(1)}%</span>
-            </div>
-          </div>
+            </span>
+          </button>
         ))}
       </div>
     </div>

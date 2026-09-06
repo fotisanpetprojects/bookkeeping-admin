@@ -5,7 +5,11 @@ import { useLocalStorageState } from '@/lib/local-storage';
 import { StringKey, useT } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/billing';
 import { BankTransaction, mergeTransactions, parseBankCsv } from '@/lib/bank';
-import { CATEGORY_IDS, CategoryId } from '@/lib/categories';
+import { CATEGORIES, CATEGORY_IDS, CategoryId } from '@/lib/categories';
+
+const FIXED_CATEGORIES = new Set(
+  CATEGORIES.filter((category) => category.fixed).map((category) => category.id)
+);
 import {
   availableAccounts,
   availableYears,
@@ -14,26 +18,39 @@ import {
   summarise,
   unknownByMerchant,
 } from '@/lib/finance';
-import { CategoryBars, ProjectionChart } from '@/app/components/charts';
+import { CategoryBar, CategoryBars, ProjectionChart } from '@/app/components/charts';
+import TransactionDrawer from '@/app/components/TransactionDrawer';
+import { isSpending } from '@/lib/finance';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-function Stat({ label, value, sub, tone }: {
+function Stat({ label, value, sub, tone, onOpen }: {
   label: string;
   value: string;
   sub?: string;
   tone?: 'good' | 'bad';
+  onOpen?: () => void;
 }) {
   const color = tone === 'good' ? 'var(--good)' : tone === 'bad' ? 'var(--bad)' : 'var(--ink)';
 
-  return (
-    <div className="card p-5">
+  const body = (
+    <>
       <div className="text-sm muted">{label}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums" style={{ color }}>
         {value}
       </div>
       {sub && <div className="mt-1 text-xs faint">{sub}</div>}
-    </div>
+    </>
+  );
+
+  if (!onOpen) {
+    return <div className="card p-5">{body}</div>;
+  }
+
+  return (
+    <button className="card p-5 text-left transition hover:-translate-y-0.5" onClick={onOpen}>
+      {body}
+    </button>
   );
 }
 
@@ -47,6 +64,9 @@ export default function FinancePage() {
   const [account, setAccount] = useState('all');
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [bulkCategory, setBulkCategory] = useState<CategoryId | ''>('');
+  const [drawer, setDrawer] = useState<
+    { title: string; subtitle?: string; filter: (t: BankTransaction) => boolean } | null
+  >(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -203,32 +223,29 @@ export default function FinancePage() {
         <section className="card p-10 text-center muted">{t('fin.noData')}</section>
       ) : (
         <>
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Stat label={t('fin.moneyIn')} value={formatCurrency(summary.moneyIn)} tone="good" />
-            <Stat
-              label={t('fin.spending')}
-              value={formatCurrency(summary.spending)}
-              sub={t('fin.perMonth', { amount: formatCurrency(summary.averageMonthlySpend) })}
-            />
-            <Stat
-              label={t('fin.net')}
-              value={formatCurrency(summary.net)}
-              tone={summary.net < 0 ? 'bad' : 'good'}
-            />
-            <Stat
-              label={t('fin.balance')}
-              value={summary.latestBalance === null ? '—' : formatCurrency(summary.latestBalance)}
-            />
-          </section>
+          <section className="grid gap-4 md:grid-cols-3">
+            <Stat label={t('fin.totalOut')} value={formatCurrency(summary.spending)} />
 
-          <section className="grid gap-4 md:grid-cols-2">
             <Stat
               label={t('fin.fixed')}
               value={formatCurrency(summary.fixedSpend)}
               sub={t('fin.perMonth', {
-                amount: formatCurrency(summary.monthsWithData ? summary.fixedSpend / summary.monthsWithData : 0),
+                amount: formatCurrency(
+                  summary.monthsWithData ? summary.fixedSpend / summary.monthsWithData : 0
+                ),
               })}
+              onOpen={() =>
+                setDrawer({
+                  title: t('fin.fixed'),
+                  subtitle: String(activeYear),
+                  filter: (transaction) =>
+                    isSpending(transaction) &&
+                    transaction.date.startsWith(String(activeYear)) &&
+                    FIXED_CATEGORIES.has(transaction.category),
+                })
+              }
             />
+
             <Stat
               label={t('fin.flexible')}
               value={formatCurrency(summary.discretionarySpend)}
@@ -237,6 +254,16 @@ export default function FinancePage() {
                   summary.monthsWithData ? summary.discretionarySpend / summary.monthsWithData : 0
                 ),
               })}
+              onOpen={() =>
+                setDrawer({
+                  title: t('fin.flexible'),
+                  subtitle: String(activeYear),
+                  filter: (transaction) =>
+                    isSpending(transaction) &&
+                    transaction.date.startsWith(String(activeYear)) &&
+                    !FIXED_CATEGORIES.has(transaction.category),
+                })
+              }
             />
           </section>
 
@@ -273,18 +300,6 @@ export default function FinancePage() {
               />
             </div>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <Stat label={t('fin.projectedIn')} value={formatCurrency(summary.projectedIn)} />
-              <Stat
-                label={t('fin.projectedSpending')}
-                value={formatCurrency(summary.projectedSpending)}
-              />
-              <Stat
-                label={t('fin.projectedNet')}
-                value={formatCurrency(summary.projectedNet)}
-                tone={summary.projectedNet < 0 ? 'bad' : 'good'}
-              />
-            </div>
           </section>
 
           <section className="card p-6">
@@ -304,7 +319,18 @@ export default function FinancePage() {
               <CategoryBars
                 fixedLabel={t('fin.fixed')}
                 flexibleLabel={t('fin.flexible')}
+                onSelect={(bar: CategoryBar) =>
+                  setDrawer({
+                    title: bar.label,
+                    subtitle: String(activeYear),
+                    filter: (transaction) =>
+                      isSpending(transaction) &&
+                      transaction.date.startsWith(String(activeYear)) &&
+                      transaction.category === bar.id,
+                  })
+                }
                 bars={summary.categories.map((category) => ({
+                  id: category.category,
                   label: categoryLabel(category.category),
                   value: category.total,
                   share: category.share,
@@ -430,6 +456,15 @@ export default function FinancePage() {
             </button>
           </section>
         </>
+      )}
+
+      {drawer && (
+        <TransactionDrawer
+          title={drawer.title}
+          subtitle={drawer.subtitle}
+          transactions={scoped.filter(drawer.filter)}
+          onClose={() => setDrawer(null)}
+        />
       )}
     </div>
   );
