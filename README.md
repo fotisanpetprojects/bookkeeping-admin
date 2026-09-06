@@ -24,19 +24,38 @@ That tradeoff keeps the product lightweight, inexpensive to run, and well scoped
 
 ## Features
 
-- `Home`: quick access to the main flows, plus backup and AI-assisted import
+- `Home`: quick access to the main flows
 - `Invoices`: build invoices from saved profiles, calculate VAT from hours and rate, export a one-page PDF, and manage everything in a sortable table with paid/overdue status
 - `Profiles`: reusable sender and client billing details, including a letterhead
 - `Expenses`: log costs, VAT rates and receipts, filtered by year
 - `VAT Summary`: net BTW per quarter, with each quarter markable as filed and paid so the headline shows what is *still* owed
-- `Money`: import a bank CSV, see where spending actually goes, and where the year lands — parsed in the browser, never uploaded
+- `Finance`: import a bank CSV and see where the money comes from and goes, what is a fixed commitment versus flexible spending, and where the year lands — parsed in the browser, never uploaded
 - `Belastingdienst`: the whole tax year — receivables, VAT, an income tax estimate with every step shown, and a projection to 31 December
 - `Language`: full NL/EN switch; English shows Dutch tax terms alongside, since those are the words on the actual forms
 - `Theme`: light and dark, following your system by default with a manual override
+- `Settings`: passphrase and recovery code, auto-lock, backup and restore, AI import
+- `Encryption`: set a passphrase and everything in the browser is encrypted at rest — see [docs/SECURITY.md](docs/SECURITY.md)
 - `Local persistence`: everything stored in browser `localStorage`
 - `Backup & restore`: export all data to JSON, and merge or replace it back
 
 ## Data Safety
+
+### Encryption
+
+Setting a passphrase encrypts everything stored in the browser. A random data key
+encrypts the records, and that key is wrapped separately by your passphrase and by a
+recovery code, so either opens the vault and neither can be derived from the other.
+Nothing stores the passphrase, the recovery code or the data key — which is why there
+is no password reset, and cannot be one.
+
+The design, its parameters, and an honest account of what it does *not* protect
+against are in **[docs/SECURITY.md](docs/SECURITY.md)**.
+
+It is opt-in: the app is fully usable without a passphrase, because switching it on is
+irreversible in the way that matters. Lose both the passphrase and the recovery code
+and the data is gone.
+
+### Everything else
 
 All data lives in this browser's `localStorage` and nowhere else. That keeps the app
 private and backend-free, but it also means clearing site data, switching browsers or
@@ -85,14 +104,16 @@ mark paid inline, and read the column totals in the closing row.
 
 ![Invoice table with selection, status chips and a totals row](public/screenshots/invoices.png)
 
-### Money
+### Finance
 
-Import a bank statement and the year is laid out: what came in, what went out,
-what is committed versus flexible, and where 31 December lands. What the rules
-cannot place is grouped by merchant, so one decision files every transaction from
-it.
+Import a bank statement and the year is laid out: where money comes from and where
+it goes, what is a fixed commitment versus flexible spending, and where 31 December
+lands. Clicking any figure opens the transactions behind it. What the rules cannot
+place is grouped by merchant, so one decision files every transaction from it.
 
-![Money page showing spending breakdown and a projection to year end](public/screenshots/money.png)
+> The screenshot predates the income panel added later.
+
+![Finance page showing spending breakdown and a projection to year end](public/screenshots/money.png)
 
 ### Belastingdienst
 
@@ -111,29 +132,41 @@ mode; the app follows your system setting and can be overridden.
 │   ├── btw-summary/page.tsx      Quarterly VAT, with settled-quarter tracking
 │   ├── clients/page.tsx          Billing profile management
 │   ├── expenses/page.tsx         Expense and receipt tracking
-│   ├── finance/page.tsx          Bank import, spending breakdown, year projection
+│   ├── finance/page.tsx          Bank import, income and spending, year projection
 │   ├── invoices/page.tsx         Invoice builder, preview and PDF export
+│   ├── settings/page.tsx         Passphrase, backups, AI import
 │   ├── components/
 │   │   ├── AiImportPanel.tsx     AI-assisted import (preview; provider not wired)
 │   │   ├── BackupPanel.tsx       Export / restore bookkeeping data
+│   │   ├── ConfirmDelete.tsx     Confirmation that can be switched off for good
 │   │   ├── InvoiceTable.tsx      Sortable invoice table with row actions
-│   │   ├── NavTabs.tsx           Navigation, language and theme controls
+│   │   ├── NavTabs.tsx           Navigation and language control
 │   │   ├── SeedLoader.tsx        One-time local backfill from /seed
 │   │   ├── ThemeToggle.tsx       Light / dark / system
+│   │   ├── TransactionDrawer.tsx Paged list behind a figure
+│   │   ├── VaultGate.tsx         Lock screen, setup, recovery code, auto-lock
+│   │   ├── VaultSettings.tsx     Change passphrase, reissue code, turn off
 │   │   └── charts.tsx            Inline SVG donut, bars and projection
+│   ├── not-found.tsx             404
 │   ├── layout.tsx                Shared app shell
 │   ├── page.tsx                  Home
 │   └── globals.css               Design tokens for light and dark
+├── docs/
+│   ├── OPEN-ITEMS.md             Engineering debt and blockers
+│   └── SECURITY.md               How the encryption works, and what it does not do
 ├── lib/
 │   ├── ai-import.ts              Extraction contract and provider seam
 │   ├── backup.ts                 Backup export, validation and restore
 │   ├── bank.ts                   Bank CSV parsing, dedupe and merge
 │   ├── billing.ts                Shared billing types and money helpers
 │   ├── categories.ts             Spending categories and the rules that assign them
-│   ├── finance.ts                Spending aggregation and year projection
+│   ├── crypto.ts                 Vault cryptography
+│   ├── crypto.test.ts            Tests for it
+│   ├── finance.ts                Spending aggregation, recurrence, projection
 │   ├── i18n.ts                   NL/EN dictionary
-│   ├── local-storage.ts          Local storage state hook
-│   └── tax.ts                    ZZP income tax estimate and BTW deadlines
+│   ├── local-storage.ts          Storage hook, vault-aware
+│   ├── tax.ts                    ZZP income tax estimate and BTW deadlines
+│   └── vault.ts                  In-memory vault, migration, lock/unlock
 ├── public/                       Static assets
 └── README.md
 ```
@@ -147,6 +180,8 @@ mode; the app follows your system setting and can be overridden.
 | Language | `TypeScript` | Type safety across app logic |
 | Styling | `Tailwind CSS 4` | Layout and visual styling |
 | Persistence | `localStorage` | Local-first data storage in the browser |
+| Encryption | `WebCrypto` | AES-GCM and PBKDF2 from the platform; no dependency handles keys |
+| Tests | `node:test` | Built in; Node runs the TypeScript directly, no test framework |
 | Charts | inline SVG | No charting dependency; colours validated for contrast and colourblind separation |
 | Tooling | `ESLint` | Basic code quality checks |
 
@@ -198,6 +233,7 @@ npm run dev
 npm run lint
 npm run build
 npm run start
+npm test      # the vault crypto tests
 ```
 
 ## Deployment
@@ -206,28 +242,37 @@ The simplest deployment path is Vercel. The app works well as a public demo beca
 
 ## Roadmap
 
-### Near term — in this order
+### Done
 
-**1. Accounts and login.** The next thing to build. Today the app has no notion of a
-user: whoever opens the browser sees whatever that browser holds. That is fine for one
-person on one machine and blocks everything else — using it on a phone as well as a
-laptop, or letting anyone else use it at all.
+- **Encryption at rest.** A passphrase encrypts everything in the browser, with a
+  recovery code as the only way back in. [docs/SECURITY.md](docs/SECURITY.md).
+- **Bank import.** CSV from Dutch banks, categorised, with recurring direct debits
+  recognised as fixed commitments regardless of category.
 
-The approach is end-to-end encryption rather than an ordinary account system: a
-passphrase derives a key in the browser, records are encrypted before they are sent,
-and the server stores ciphertext it cannot read. That keeps the promise this project
-started with — the data belongs to the person who entered it — while making sync
-possible. It also means a breach exposes noise rather than anyone's finances.
+### Next, in this order
 
-**2. AI import, after that.** Extraction moves behind a server route so the API key
-never sits in the browser, which also closes the standing security gap. That unlocks
-categorising the long tail of small local merchants no rule list can cover, and PDF
-statements. It is deliberately second: an AI feature on top of an app with no accounts
-would be building the roof before the walls.
+**1. Sync, encrypted end to end.** The vault is local, so laptop and phone are still
+separate islands and moving between them means exporting and restoring a file by hand.
+The encrypted blob is already the right shape to sync; what is missing is somewhere to
+put it and an account identity to put it under. The server would hold ciphertext it
+cannot read, which is the only version of sync consistent with how this app treats
+data. Needs a decision on storage, and it is the first thing here to require a service
+account.
+
+**2. AI import.** Extraction moves behind a server route so the API key never sits in
+the browser, closing the standing security gap. That unlocks categorising the long
+tail of small local merchants no rule list can cover, and PDF statements. Second
+because an AI feature on an app with no accounts is the roof before the walls.
 
 **3. Then:** MT940/CAMT imports, matching bank transactions against invoices so unpaid
-work reconciles itself, and the business/private flag that pushes a deductible cost
-straight into the tax picture.
+work reconciles itself, the business/private flag that pushes a deductible cost
+straight into the tax picture, and multiple line items per invoice.
+
+### Known rough edges
+
+The lock and setup screens are functional rather than designed, there is no passphrase
+strength hint, and errors are plain red text. Listed here rather than quietly left,
+because they are the first thing anyone else would meet.
 
 ### Where this is heading: personal financial admin, not just bookkeeping
 
@@ -258,9 +303,9 @@ anyone's bank data.
 
 ### If it grows beyond local-first
 
-An optional backend for authentication, sync and storage. Deliberately out of scope
-for the current version, and a hard prerequisite for the bank-statement work above
-ever being offered to anyone but yourself.
+Encryption landed first, deliberately: it means a backend can be added later without
+the server ever being able to read what it stores. What is still missing is the
+storage itself and an account identity — see "Next" above.
 
 ## Portfolio Value
 
