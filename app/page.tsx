@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import BackupPanel from '@/app/components/BackupPanel';
+import VaultPanel from '@/app/components/VaultPanel';
 import AiImportPanel from '@/app/components/AiImportPanel';
 import { StringKey, useT } from '@/lib/i18n';
 
@@ -44,6 +45,8 @@ export default function Home() {
           </Link>
         ))}
       </section>
+
+      <VaultPanel />
 
       <BackupPanel />
 
