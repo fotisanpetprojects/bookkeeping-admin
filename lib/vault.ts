@@ -18,14 +18,19 @@
 
 import {
   VaultEnvelope,
+  changePassphrase,
   createVault,
   decryptWithDek,
+  resetRecoveryCode,
   sealVault,
   unlockWithPassphrase,
   unlockWithRecoveryCode,
 } from '@/lib/crypto';
 
 export const VAULT_KEY = 'vault.v1';
+
+/** Minutes of inactivity before locking. 0 means never. */
+export const AUTO_LOCK_KEY = 'vault-auto-lock-minutes';
 
 /** The keys whose contents move into the vault. */
 export const VAULTED_KEYS = [
@@ -200,13 +205,51 @@ export async function lock() {
   notify();
 }
 
-/** Exposed so a passphrase change can re-wrap without reopening the vault. */
-export function currentKeys() {
-  return { envelope, dek };
+/**
+ * Swaps the passphrase. The current one is required even though the vault is
+ * already open — otherwise anyone passing an unlocked laptop could lock the owner
+ * out of their own books.
+ */
+export async function rotatePassphrase(current: string, next: string) {
+  if (!envelope || !dek) throw new Error('Unlock the vault before changing its passphrase.');
+
+  // Throws WrongSecretError if the current passphrase is not right.
+  await unlockWithPassphrase(envelope, current);
+
+  const rotated = await changePassphrase(envelope, dek, next);
+  envelope = rotated;
+  window.localStorage.setItem(VAULT_KEY, JSON.stringify(rotated));
+  notify();
 }
 
-export function adoptEnvelope(next: VaultEnvelope) {
+/** Issues a fresh recovery code and retires the previous one. */
+export async function reissueRecoveryCode() {
+  if (!envelope || !dek) throw new Error('Unlock the vault before issuing a new recovery code.');
+
+  const { envelope: next, recoveryCode } = await resetRecoveryCode(envelope, dek);
   envelope = next;
   window.localStorage.setItem(VAULT_KEY, JSON.stringify(next));
+  notify();
+
+  return recoveryCode;
+}
+
+/**
+ * Removes the encryption, writing the records back as ordinary storage. The plain
+ * copies are written first and only then is the envelope dropped, so an
+ * interruption leaves a readable vault rather than nothing at all.
+ */
+export async function removeVault() {
+  if (!memory) throw new Error('Unlock the vault before turning encryption off.');
+
+  for (const [key, raw] of memory) {
+    window.localStorage.setItem(key, raw);
+  }
+
+  window.localStorage.removeItem(VAULT_KEY);
+
+  memory = null;
+  dek = null;
+  envelope = null;
   notify();
 }

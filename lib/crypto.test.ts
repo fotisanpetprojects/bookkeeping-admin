@@ -17,6 +17,7 @@ import {
   formatRecoveryCode,
   fromBase64,
   generateRecoveryCode,
+  resetRecoveryCode,
   toBase64,
   unlockWithPassphrase,
   unlockWithRecoveryCode,
@@ -116,6 +117,20 @@ test('tampered ciphertext is refused, not decrypted into rubbish', async () => {
   await assert.rejects(() =>
     decryptWithDek(dek, { iv: envelope.payload.iv, ciphertext: toBase64(bytes) })
   );
+});
+
+test('a new recovery code retires the old one and keeps the passphrase working', async () => {
+  const { envelope, dek, recoveryCode } = await createVault(PASSPHRASE, BOOKS);
+  const { envelope: reissued, recoveryCode: fresh } = await resetRecoveryCode(envelope, dek);
+
+  assert.notEqual(fresh, recoveryCode);
+  await assert.rejects(() => unlockWithRecoveryCode(reissued, recoveryCode), /does not open/);
+
+  const viaFresh = await unlockWithRecoveryCode(reissued, fresh);
+  assert.equal(await decryptWithDek(viaFresh, reissued.payload), BOOKS);
+
+  const viaPassphrase = await unlockWithPassphrase(reissued, PASSPHRASE);
+  assert.equal(await decryptWithDek(viaPassphrase, reissued.payload), BOOKS);
 });
 
 test('two vaults made from the same passphrase do not share key material', async () => {

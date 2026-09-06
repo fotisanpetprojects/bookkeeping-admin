@@ -10,6 +10,7 @@ import {
   unlock,
   unlockWithRecovery,
   vaultExists,
+  AUTO_LOCK_KEY,
 } from '@/lib/vault';
 
 /** Long enough to matter, short enough that people will actually choose one. */
@@ -43,6 +44,25 @@ export default function VaultGate({ children }: { children: React.ReactNode }) {
     settle();
     const unsubscribe = subscribeToVault(settle);
 
+    // Auto-lock. The timer restarts on any real interaction, so it only fires when
+    // the app has genuinely been left alone.
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const resetIdle = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+
+      const minutes = Number(
+        JSON.parse(window.localStorage.getItem(AUTO_LOCK_KEY) ?? '0') || 0
+      );
+      if (!minutes || !isUnlocked()) return;
+
+      idleTimer = setTimeout(() => void lock(), minutes * 60_000);
+    };
+
+    const activity = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
+    for (const event of activity) window.addEventListener(event, resetIdle, { passive: true });
+    resetIdle();
+
     // The home page asks for the setup screen; the gate owns it because it already
     // owns the locked and unlocked states.
     const openSetup = () => setScreen('setup');
@@ -51,6 +71,8 @@ export default function VaultGate({ children }: { children: React.ReactNode }) {
     return () => {
       unsubscribe();
       window.removeEventListener(SETUP_REQUEST, openSetup);
+      for (const event of activity) window.removeEventListener(event, resetIdle);
+      if (idleTimer) clearTimeout(idleTimer);
     };
   }, []);
 

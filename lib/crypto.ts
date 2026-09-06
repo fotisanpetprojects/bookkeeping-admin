@@ -307,6 +307,25 @@ export async function changePassphrase(
   };
 }
 
+/**
+ * Issues a new recovery code and retires the old one. Used when the original is
+ * lost, or when it may have been seen by someone it should not have been.
+ */
+export async function resetRecoveryCode(envelope: VaultEnvelope, dek: CryptoKey) {
+  const recoveryCode = generateRecoveryCode();
+  const salt = randomBytes(SALT_BYTES);
+  const kek = await deriveKekFromRecovery(recoveryCode, salt);
+
+  return {
+    envelope: {
+      ...envelope,
+      recovery: await wrapDek(dek, kek, salt, 1_000),
+      updatedAt: new Date().toISOString(),
+    } satisfies VaultEnvelope,
+    recoveryCode: formatRecoveryCode(recoveryCode),
+  };
+}
+
 export async function sealVault(
   envelope: VaultEnvelope,
   dek: CryptoKey,
