@@ -363,3 +363,7 @@ body {
     padding-bottom: 0.55rem;
   }
 }
+
+/* Centred confirmation, reusing the drawer's scrim. */
+.drawer-root:has(.confirm-panel) { align-items: center; justify-content: center; }
+.confirm-panel { position: relative; width: min(26rem, calc(100% - 2rem)); }

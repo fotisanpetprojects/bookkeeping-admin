@@ -20,6 +20,69 @@ export function isSpending(transaction: BankTransaction) {
   return transaction.amount < 0 && !NOT_SPENDING.includes(transaction.category);
 }
 
+/**
+ * Finds merchants you pay on a regular cadence for a steady amount — a gym, a
+ * phone plan, an insurer.
+ *
+ * Whether a cost is fixed is a property of the payment pattern, not of the
+ * category it happens to sit in. A gym filed under "sports & hobbies" is still a
+ * monthly commitment, and reading that off the data is both more accurate and
+ * more honest than hard-coding which categories count as fixed.
+ *
+ * The deciding signal is how the money leaves, not how regular it looks. A direct
+ * debit is a standing arrangement someone else collects on; a card payment is a
+ * decision you make each time. A barber visited monthly for the same price would
+ * otherwise read as a commitment, when in truth you could simply stop going.
+ *
+ * On top of that the test is about cadence, not amount: does this merchant collect
+ * in most months across the span it has been active? Amount is deliberately not
+ * checked, because subscriptions raise their prices and metered bills like energy
+ * vary every month — a gym going from 29.99 to 37.99 mid-year is still a gym
+ * membership.
+ */
+const PULL_PAYMENT_CODES = new Set([
+  'IC', // SEPA direct debit — the collector decides when
+  'DV', // bank's own charges
+  'VZ', // standing batch payment
+]);
+
+export function detectRecurring(transactions: BankTransaction[]) {
+  const byMerchant = new Map<string, BankTransaction[]>();
+
+  for (const transaction of transactions) {
+    if (transaction.amount >= 0) continue;
+    if (!PULL_PAYMENT_CODES.has(transaction.code)) continue;
+    const key = merchantKey(transaction.description);
+    byMerchant.set(key, [...(byMerchant.get(key) ?? []), transaction]);
+  }
+
+  const recurring = new Set<string>();
+
+  for (const [key, group] of byMerchant) {
+    if (group.length < 3) continue;
+
+    const months = [...new Set(group.map((t) => t.date.slice(0, 7)))].sort();
+    if (months.length < 3) continue;
+
+    // How many months it could have collected in, from first charge to last.
+    const [firstYear, firstMonth] = months[0].split('-').map(Number);
+    const [lastYear, lastMonth] = months[months.length - 1].split('-').map(Number);
+    const span = (lastYear - firstYear) * 12 + (lastMonth - firstMonth) + 1;
+
+    // Present in most months of its own active span — that is a standing arrangement.
+    if (months.length / span >= 0.6) {
+      recurring.add(key);
+    }
+  }
+
+  return recurring;
+}
+
+/** A cost is fixed if its category says so, or if the payments look like a subscription. */
+export function isFixedCommitment(transaction: BankTransaction, recurring: Set<string>) {
+  return FIXED.has(transaction.category) || recurring.has(merchantKey(transaction.description));
+}
+
 export type MonthPoint = {
   month: string;
   moneyIn: number;
@@ -37,10 +100,19 @@ export type CategoryTotal = {
   share: number;
 };
 
+export type IncomeSource = {
+  key: string;
+  label: string;
+  total: number;
+  count: number;
+  share: number;
+};
+
 export type FinanceSummary = {
   year: number;
   months: MonthPoint[];
   categories: CategoryTotal[];
+  incomeSources: IncomeSource[];
   moneyIn: number;
   spending: number;
   net: number;
@@ -153,15 +225,23 @@ export function summarise(transactions: BankTransaction[], year: number): Financ
 
   const spendingTransactions = inYear.filter(isSpending);
   const spending = spendingTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  const moneyIn = inYear
-    .filter((t) => t.amount > 0 && t.category !== 'transfers')
-    .reduce((sum, t) => sum + t.amount, 0);
 
-  const totals = new Map<CategoryId, { total: number; count: number }>();
+  const incomeTransactions = inYear.filter((t) => t.amount > 0 && t.category !== 'transfers');
+  const moneyIn = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+  // Recurrence is measured over everything imported, not just this year, so a
+  // subscription is still recognised in January.
+  const recurring = detectRecurring(transactions);
+
+  const totals = new Map<CategoryId, { total: number; count: number; fixedAmount: number }>();
   for (const transaction of spendingTransactions) {
-    const current = totals.get(transaction.category) ?? { total: 0, count: 0 };
-    current.total += Math.abs(transaction.amount);
+    const current = totals.get(transaction.category) ?? { total: 0, count: 0, fixedAmount: 0 };
+    const amount = Math.abs(transaction.amount);
+    current.total += amount;
     current.count += 1;
+    if (isFixedCommitment(transaction, recurring)) {
+      current.fixedAmount += amount;
+    }
     totals.set(transaction.category, current);
   }
 
@@ -170,8 +250,30 @@ export function summarise(transactions: BankTransaction[], year: number): Financ
       category,
       total: value.total,
       count: value.count,
-      fixed: FIXED.has(category),
+      // A category counts as fixed when most of its money is recurring, so a gym
+      // filed under sports still reads as a commitment.
+      fixed: value.fixedAmount / value.total >= 0.5,
       share: spending > 0 ? value.total / spending : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  // Where the money comes from, grouped by payer.
+  const sources = new Map<string, { label: string; total: number; count: number }>();
+  for (const transaction of incomeTransactions) {
+    const key = merchantKey(transaction.description);
+    const current = sources.get(key) ?? { label: transaction.description, total: 0, count: 0 };
+    current.total += transaction.amount;
+    current.count += 1;
+    sources.set(key, current);
+  }
+
+  const incomeSources: IncomeSource[] = [...sources.entries()]
+    .map(([key, value]) => ({
+      key,
+      label: value.label,
+      total: value.total,
+      count: value.count,
+      share: moneyIn > 0 ? value.total / moneyIn : 0,
     }))
     .sort((a, b) => b.total - a.total);
 
@@ -208,11 +310,18 @@ export function summarise(transactions: BankTransaction[], year: number): Financ
     year,
     months,
     categories,
+    incomeSources,
     moneyIn,
     spending,
     net: moneyIn - spending,
-    fixedSpend: categories.filter((c) => c.fixed).reduce((sum, c) => sum + c.total, 0),
-    discretionarySpend: categories.filter((c) => !c.fixed).reduce((sum, c) => sum + c.total, 0),
+    // Summed per transaction rather than per category, so a recurring charge counts
+    // as fixed even when the rest of its category is not.
+    fixedSpend: spendingTransactions
+      .filter((t) => isFixedCommitment(t, recurring))
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0),
+    discretionarySpend: spendingTransactions
+      .filter((t) => !isFixedCommitment(t, recurring))
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0),
     unknownSpend: totals.get('unknown')?.total ?? 0,
     unknownCount: totals.get('unknown')?.count ?? 0,
     monthsWithData,

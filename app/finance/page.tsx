@@ -20,9 +20,13 @@ import {
 } from '@/lib/finance';
 import { CategoryBar, CategoryBars, ProjectionChart } from '@/app/components/charts';
 import TransactionDrawer from '@/app/components/TransactionDrawer';
+import ConfirmDelete from '@/app/components/ConfirmDelete';
 import { isSpending } from '@/lib/finance';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Enough to work through in one sitting; the rest is behind the arrow. */
+const SHOWN_UNKNOWNS = 8;
 
 function Stat({ label, value, sub, tone, onOpen }: {
   label: string;
@@ -67,6 +71,12 @@ export default function FinancePage() {
   const [drawer, setDrawer] = useState<
     { title: string; subtitle?: string; filter: (t: BankTransaction) => boolean } | null
   >(null);
+  const [showAllUnknown, setShowAllUnknown] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ ids: string[]; message: string } | null>(null);
+  const [skipDeleteConfirm, setSkipDeleteConfirm] = useLocalStorageState(
+    'skip-delete-confirm',
+    false
+  );
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +92,7 @@ export default function FinancePage() {
 
   const summary = useMemo(() => summarise(scoped, activeYear), [scoped, activeYear]);
   const unknowns = useMemo(() => unknownByMerchant(scoped, activeYear), [scoped, activeYear]);
+  const shownUnknowns = showAllUnknown ? unknowns : unknowns.slice(0, SHOWN_UNKNOWNS);
 
   const categoryLabel = (id: CategoryId) => t(`cat.${id}` as StringKey);
 
@@ -149,10 +160,19 @@ export default function FinancePage() {
     setBulkCategory('');
   };
 
-  const clearAll = () => {
-    if (!window.confirm(t('fin.clearConfirm'))) return;
-    setTransactions([]);
-    setNotice('');
+  const deleteIds = (ids: string[]) => {
+    const doomed = new Set(ids);
+    setTransactions(transactions.filter((transaction) => !doomed.has(transaction.id)));
+    setPicked(new Set());
+  };
+
+  /** Confirms once, unless the user has said not to ask again. */
+  const requestDelete = (ids: string[], message: string) => {
+    if (skipDeleteConfirm) {
+      deleteIds(ids);
+      return;
+    }
+    setPendingDelete({ ids, message });
   };
 
   const hasData = transactions.length > 0;
@@ -302,42 +322,81 @@ export default function FinancePage() {
 
           </section>
 
-          <section className="card p-6">
-            <h2 className="text-lg font-semibold">{t('fin.breakdown')}</h2>
-            <p className="mt-1 max-w-3xl text-sm muted">{t('fin.breakdownHint')}</p>
+          {/* In and out side by side: the two halves of the same question. */}
+          <section className="grid gap-4 xl:grid-cols-2">
+            <div className="card p-6">
+              <h2 className="text-lg font-semibold">{t('fin.incoming')}</h2>
+              <p className="mt-1 text-sm muted">{t('fin.incomingHint')}</p>
 
-            {summary.unknownCount > 0 && (
-              <div className="mt-4 panel p-3 text-sm text-[var(--warn)]">
-                {t('fin.unknownWarning', {
-                  amount: formatCurrency(summary.unknownSpend),
-                  count: summary.unknownCount,
-                })}
+              <div className="mt-5">
+                {summary.incomeSources.length === 0 ? (
+                  <p className="py-8 text-center text-sm faint">{t('fin.noIncome')}</p>
+                ) : (
+                  <CategoryBars
+                    tone="in"
+                    onSelect={(bar: CategoryBar) =>
+                      setDrawer({
+                        title: bar.label,
+                        subtitle: String(activeYear),
+                        filter: (transaction) =>
+                          transaction.amount > 0 &&
+                          transaction.category !== 'transfers' &&
+                          transaction.date.startsWith(String(activeYear)) &&
+                          merchantKey(transaction.description) === bar.id,
+                      })
+                    }
+                    bars={summary.incomeSources.map((source) => ({
+                      id: source.key,
+                      label: source.label,
+                      value: source.total,
+                      share: source.share,
+                      count: source.count,
+                      fixed: false,
+                    }))}
+                  />
+                )}
               </div>
-            )}
+            </div>
 
-            <div className="mt-5">
-              <CategoryBars
-                fixedLabel={t('fin.fixed')}
-                flexibleLabel={t('fin.flexible')}
-                onSelect={(bar: CategoryBar) =>
-                  setDrawer({
-                    title: bar.label,
-                    subtitle: String(activeYear),
-                    filter: (transaction) =>
-                      isSpending(transaction) &&
-                      transaction.date.startsWith(String(activeYear)) &&
-                      transaction.category === bar.id,
-                  })
-                }
-                bars={summary.categories.map((category) => ({
-                  id: category.category,
-                  label: categoryLabel(category.category),
-                  value: category.total,
-                  share: category.share,
-                  count: category.count,
-                  fixed: category.fixed,
-                }))}
-              />
+            <div className="card p-6">
+              <h2 className="text-lg font-semibold">{t('fin.breakdown')}</h2>
+              <p className="mt-1 text-sm muted">{t('fin.breakdownHint')}</p>
+
+              {summary.unknownCount > 0 && (
+                <div className="mt-4 panel p-3 text-sm text-[var(--warn)]">
+                  {t('fin.unknownWarning', {
+                    amount: formatCurrency(summary.unknownSpend),
+                    count: summary.unknownCount,
+                  })}
+                </div>
+              )}
+
+              <div className="mt-5">
+                <CategoryBars
+                  fixedLabel={t('fin.fixed')}
+                  flexibleLabel={t('fin.flexible')}
+                  onSelect={(bar: CategoryBar) =>
+                    setDrawer({
+                      title: bar.label,
+                      subtitle: String(activeYear),
+                      filter: (transaction) =>
+                        isSpending(transaction) &&
+                        transaction.date.startsWith(String(activeYear)) &&
+                        transaction.category === bar.id,
+                    })
+                  }
+                  bars={summary.categories.map((category) => ({
+                    id: category.category,
+                    label: categoryLabel(category.category),
+                    value: category.total,
+                    share: category.share,
+                    count: category.count,
+                    fixed: category.fixed,
+                  }))}
+                />
+              </div>
+
+              <p className="mt-4 text-xs faint">{t('fin.recurringNote')}</p>
             </div>
           </section>
 
@@ -350,12 +409,12 @@ export default function FinancePage() {
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    checked={picked.size === unknowns.slice(0, 25).length && picked.size > 0}
+                    checked={picked.size === shownUnknowns.length && picked.size > 0}
                     onChange={() =>
                       setPicked(
-                        picked.size === unknowns.slice(0, 25).length
+                        picked.size === shownUnknowns.length
                           ? new Set()
-                          : new Set(unknowns.slice(0, 25).map((group) => group.key))
+                          : new Set(shownUnknowns.map((group) => group.key))
                       )
                     }
                   />
@@ -402,10 +461,10 @@ export default function FinancePage() {
               </p>
             ) : (
               <div className="mt-5 space-y-2">
-                {unknowns.slice(0, 25).map((group) => (
+                {shownUnknowns.map((group) => (
                   <div
                     key={group.key}
-                    className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b border-[var(--line)] pb-2 last:border-0"
+                    className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-3 border-b border-[var(--line)] pb-2 last:border-0"
                   >
                     <input
                       type="checkbox"
@@ -444,16 +503,46 @@ export default function FinancePage() {
                         </option>
                       ))}
                     </select>
+
+                    <button
+                      className="btn btn-icon btn-danger"
+                      title={t('fin.deleteGroup')}
+                      aria-label={t('fin.deleteGroup')}
+                      onClick={() =>
+                        requestDelete(
+                          group.ids,
+                          t('fin.deleteConfirm', { count: group.count, name: group.label })
+                        )
+                      }
+                    >
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden>
+                        <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>
             )}
-          </section>
 
-          <section className="flex justify-end">
-            <button className="btn btn-danger" onClick={clearAll}>
-              {t('fin.clearAll')}
-            </button>
+            {unknowns.length > SHOWN_UNKNOWNS && (
+              <button
+                className="btn mt-4"
+                onClick={() => setShowAllUnknown((value) => !value)}
+                aria-expanded={showAllUnknown}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  aria-hidden
+                  style={{ transform: showAllUnknown ? 'rotate(180deg)' : undefined }}
+                >
+                  <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {showAllUnknown ? t('fin.showFewer') : t('fin.showAll', { count: unknowns.length })}
+              </button>
+            )}
           </section>
         </>
       )}
@@ -464,6 +553,21 @@ export default function FinancePage() {
           subtitle={drawer.subtitle}
           transactions={scoped.filter(drawer.filter)}
           onClose={() => setDrawer(null)}
+          onDelete={(transaction) =>
+            requestDelete([transaction.id], t('fin.deleteOneConfirm'))
+          }
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDelete
+          message={pendingDelete.message}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={(remember) => {
+            if (remember) setSkipDeleteConfirm(true);
+            deleteIds(pendingDelete.ids);
+            setPendingDelete(null);
+          }}
         />
       )}
     </div>

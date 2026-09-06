@@ -400,11 +400,13 @@ export type CategoryBar = {
  * thing colour encodes is the one split that is actually binary — a commitment
  * you cannot easily change this month versus spending you can.
  */
-export function CategoryBars({ bars, fixedLabel, flexibleLabel, onSelect }: {
+export function CategoryBars({ bars, fixedLabel, flexibleLabel, onSelect, tone }: {
   bars: CategoryBar[];
-  fixedLabel: string;
-  flexibleLabel: string;
+  fixedLabel?: string;
+  flexibleLabel?: string;
   onSelect?: (bar: CategoryBar) => void;
+  /** "in" draws a single income hue with no legend; the default splits fixed/flexible. */
+  tone?: 'in' | 'out';
 }) {
   const { t } = useT();
 
@@ -413,19 +415,23 @@ export function CategoryBars({ bars, fixedLabel, flexibleLabel, onSelect }: {
   }
 
   const max = Math.max(...bars.map((bar) => bar.value), 1);
+  const colourOf = (bar: CategoryBar) =>
+    tone === 'in' ? 'var(--series-2)' : bar.fixed ? 'var(--series-1)' : 'var(--series-2)';
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap gap-4 text-sm">
-        <span className="flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: 'var(--series-1)' }} />
-          {fixedLabel}
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: 'var(--series-2)' }} />
-          {flexibleLabel}
-        </span>
-      </div>
+      {tone !== 'in' && fixedLabel && flexibleLabel && (
+        <div className="mb-4 flex flex-wrap gap-4 text-sm">
+          <span className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: 'var(--series-1)' }} />
+            {fixedLabel}
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: 'var(--series-2)' }} />
+            {flexibleLabel}
+          </span>
+        </div>
+      )}
 
       <div className="space-y-1">
         {bars.map((bar) => (
@@ -444,7 +450,7 @@ export function CategoryBars({ bars, fixedLabel, flexibleLabel, onSelect }: {
                 className="block h-5 rounded-[4px]"
                 style={{
                   width: `${Math.max(1.5, (bar.value / max) * 100)}%`,
-                  background: bar.fixed ? 'var(--series-1)' : 'var(--series-2)',
+                  background: colourOf(bar),
                 }}
               />
             </span>

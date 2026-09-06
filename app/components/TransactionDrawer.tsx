@@ -16,11 +16,13 @@ export default function TransactionDrawer({
   subtitle,
   transactions,
   onClose,
+  onDelete,
 }: {
   title: string;
   subtitle?: string;
   transactions: BankTransaction[];
   onClose: () => void;
+  onDelete?: (transaction: BankTransaction) => void;
 }) {
   const { t } = useT();
   const [page, setPage] = useState(0);
@@ -90,8 +92,22 @@ export default function TransactionDrawer({
                       {transaction.manualCategory ? ` · ${t('fin.setByHand')}` : ''}
                     </div>
                   </div>
-                  <div className="whitespace-nowrap text-sm tabular-nums">
-                    {formatCurrency(Math.abs(transaction.amount))}
+                  <div className="flex items-center gap-2">
+                    <span className="whitespace-nowrap text-sm tabular-nums">
+                      {formatCurrency(Math.abs(transaction.amount))}
+                    </span>
+                    {onDelete && (
+                      <button
+                        className="btn btn-icon btn-danger"
+                        title={t('fin.deleteOne')}
+                        aria-label={t('fin.deleteOne')}
+                        onClick={() => onDelete(transaction)}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden>
+                          <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </li>
               ))}
