@@ -216,8 +216,8 @@ export const STRINGS = {
 
 
 
-  'nav.finance': { en: 'Money', nl: 'Geld' },
-  'fin.title': { en: 'Money', nl: 'Geld' },
+  'nav.finance': { en: 'Finance', nl: 'Financiën' },
+  'fin.title': { en: 'Finance', nl: 'Financiën' },
   'fin.subtitle': {
     en: 'What comes in, what goes out, and where the year is heading.',
     nl: 'Wat er binnenkomt, wat eruit gaat, en waar het jaar op uitkomt.',
@@ -267,6 +267,12 @@ export const STRINGS = {
     en: '{amount} across {count} transaction(s) is still uncategorised, so the split below is incomplete.',
     nl: '{amount} verdeeld over {count} transactie(s) is nog niet gerubriceerd, dus de verdeling hieronder is onvolledig.',
   },
+  'fin.allAccounts': { en: 'All {count} accounts', nl: 'Alle {count} rekeningen' },
+  'fin.selected': { en: '{count} selected', nl: '{count} geselecteerd' },
+  'fin.applyTo': { en: 'Apply to selected', nl: 'Toepassen op selectie' },
+  'fin.selectAllUnknown': { en: 'Select all shown', nl: 'Alles hieronder selecteren' },
+  'fin.clearSelection': { en: 'Clear selection', nl: 'Selectie wissen' },
+  'fin.chooseCategory': { en: 'Choose a category', nl: 'Kies een categorie' },
   'fin.assign': { en: 'Assign', nl: 'Toewijzen' },
   'fin.transactions': { en: 'transaction(s)', nl: 'transactie(s)' },
   'fin.clearAll': { en: 'Delete all transactions', nl: 'Alle transacties verwijderen' },
@@ -293,6 +299,16 @@ export const STRINGS = {
   'cat.income': { en: 'Income', nl: 'Inkomsten' },
   'cat.unknown': { en: 'Unknown', nl: 'Onbekend' },
 
+  'nf.title': { en: 'No financial data found', nl: 'Geen financiële gegevens gevonden' },
+  'nf.body': {
+    en: 'This page is not in the books. Nothing was lost — it never existed in the first place.',
+    nl: 'Deze pagina staat niet in de boeken. Er is niets kwijt — hij heeft nooit bestaan.',
+  },
+  'nf.home': { en: 'Back to Home', nl: 'Terug naar Home' },
+  'nf.joke': {
+    en: 'Balance: € 0,00 · VAT owed on nothing: also € 0,00',
+    nl: 'Saldo: € 0,00 · BTW over niets: ook € 0,00',
+  },
   'home.eyebrow': { en: 'Bookkeeping Admin', nl: 'Bookkeeping Admin' },
   'home.headline': {
     en: 'Keep your invoices, receipts and quarterly BTW under control.',
@@ -413,6 +429,8 @@ export const STRINGS = {
   'inv.selectedCount': { en: '{count} selected', nl: '{count} geselecteerd' },
   'total.label': { en: 'Total', nl: 'Totaal' },
 
+  'exp.monthlyAverage': { en: 'Monthly average (ex VAT)', nl: 'Maandgemiddelde (excl. BTW)' },
+  'exp.acrossMonths': { en: 'across {count} month(s) with expenses', nl: 'over {count} maand(en) met uitgaven' },
   'exp.dateRange': { en: 'Allowed date range: {min} to {max}', nl: 'Toegestane datumreeks: {min} tot {max}' },
   'exp.addExpense': { en: 'Add Expense', nl: 'Uitgave toevoegen' },
   'exp.saveChanges': { en: 'Save changes', nl: 'Wijzigingen opslaan' },

@@ -68,6 +68,46 @@ function daysBetween(from: string, to: string) {
   return Math.max(0, Math.round(ms / 86400000));
 }
 
+export function availableAccounts(transactions: BankTransaction[]) {
+  return [...new Set(transactions.map((t) => t.account).filter(Boolean))].sort();
+}
+
+/**
+ * A payment from one of your own accounts into another is not income or spending —
+ * it is the same money. Matching by amount and date across accounts catches the
+ * common case so both sides drop out of the totals.
+ */
+export function markInternalTransfers(transactions: BankTransaction[]) {
+  const accounts = new Set(transactions.map((t) => t.account).filter(Boolean));
+  if (accounts.size < 2) return transactions;
+
+  const credits = new Map<string, BankTransaction[]>();
+  for (const t of transactions) {
+    if (t.amount <= 0) continue;
+    const key = `${t.date}|${t.amount.toFixed(2)}`;
+    credits.set(key, [...(credits.get(key) ?? []), t]);
+  }
+
+  const internal = new Set<string>();
+  for (const debit of transactions) {
+    if (debit.amount >= 0) continue;
+    const key = `${debit.date}|${Math.abs(debit.amount).toFixed(2)}`;
+    const match = (credits.get(key) ?? []).find(
+      (credit) => credit.account !== debit.account && !internal.has(credit.id)
+    );
+    if (match) {
+      internal.add(debit.id);
+      internal.add(match.id);
+    }
+  }
+
+  return transactions.map((t) =>
+    internal.has(t.id) && !t.manualCategory
+      ? { ...t, category: 'transfers' as CategoryId, internalTransfer: true }
+      : t
+  );
+}
+
 export function availableYears(transactions: BankTransaction[]) {
   const years = new Set(transactions.map((t) => Number(t.date.slice(0, 4))));
   return [...years].filter((y) => Number.isFinite(y)).sort((a, b) => b - a);
@@ -150,9 +190,18 @@ export function summarise(transactions: BankTransaction[], year: number): Financ
   const projectedSpending = spending * scale;
   const projectedIn = moneyIn * scale;
 
-  const withBalance = inYear.filter((t) => t.balance !== null);
-  const latestBalance = withBalance.length > 0
-    ? withBalance.reduce((latest, t) => (t.date >= latest.date ? t : latest), withBalance[0]).balance
+  // Each account has its own running balance; summing the latest of each gives the
+  // total holding. Mixing two ledgers into one "latest" would be meaningless.
+  const perAccount = new Map<string, BankTransaction>();
+  for (const transaction of inYear) {
+    if (transaction.balance === null) continue;
+    const current = perAccount.get(transaction.account);
+    if (!current || transaction.date >= current.date) {
+      perAccount.set(transaction.account, transaction);
+    }
+  }
+  const latestBalance = perAccount.size > 0
+    ? [...perAccount.values()].reduce((sum, t) => sum + (t.balance ?? 0), 0)
     : null;
 
   return {

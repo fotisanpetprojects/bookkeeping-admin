@@ -6,7 +6,14 @@ import { StringKey, useT } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/billing';
 import { BankTransaction, mergeTransactions, parseBankCsv } from '@/lib/bank';
 import { CATEGORY_IDS, CategoryId } from '@/lib/categories';
-import { availableYears, merchantKey, summarise, unknownByMerchant } from '@/lib/finance';
+import {
+  availableAccounts,
+  availableYears,
+  markInternalTransfers,
+  merchantKey,
+  summarise,
+  unknownByMerchant,
+} from '@/lib/finance';
 import { CategoryBars, ProjectionChart } from '@/app/components/charts';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -37,18 +44,24 @@ export default function FinancePage() {
     []
   );
   const [year, setYear] = useState<number | null>(null);
+  const [account, setAccount] = useState('all');
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [bulkCategory, setBulkCategory] = useState<CategoryId | ''>('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const years = useMemo(() => availableYears(transactions), [transactions]);
+  const accounts = useMemo(() => availableAccounts(transactions), [transactions]);
   const activeYear = year ?? years[0] ?? new Date().getFullYear();
 
-  const summary = useMemo(() => summarise(transactions, activeYear), [transactions, activeYear]);
-  const unknowns = useMemo(
-    () => unknownByMerchant(transactions, activeYear),
-    [transactions, activeYear]
-  );
+  const scoped = useMemo(() => {
+    const marked = markInternalTransfers(transactions);
+    return account === 'all' ? marked : marked.filter((t) => t.account === account);
+  }, [transactions, account]);
+
+  const summary = useMemo(() => summarise(scoped, activeYear), [scoped, activeYear]);
+  const unknowns = useMemo(() => unknownByMerchant(scoped, activeYear), [scoped, activeYear]);
 
   const categoryLabel = (id: CategoryId) => t(`cat.${id}` as StringKey);
 
@@ -93,6 +106,29 @@ export default function FinancePage() {
     );
   };
 
+  const togglePicked = (key: string) => {
+    setPicked((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const applyBulk = () => {
+    if (!bulkCategory || picked.size === 0) return;
+
+    setTransactions(
+      transactions.map((transaction) =>
+        picked.has(merchantKey(transaction.description)) && transaction.category === 'unknown'
+          ? { ...transaction, category: bulkCategory, manualCategory: true }
+          : transaction
+      )
+    );
+    setPicked(new Set());
+    setBulkCategory('');
+  };
+
   const clearAll = () => {
     if (!window.confirm(t('fin.clearConfirm'))) return;
     setTransactions([]);
@@ -109,6 +145,24 @@ export default function FinancePage() {
           <p className="mt-2 max-w-2xl muted">{t('fin.subtitle')}</p>
         </div>
 
+        <div className="flex flex-wrap items-center gap-3">
+          {accounts.length > 1 && (
+            <select
+              className="field field-inline"
+              value={account}
+              onChange={(event) => setAccount(event.target.value)}
+            >
+              <option value="all" style={{ color: 'var(--ink)', background: 'var(--surface)' }}>
+                {t('fin.allAccounts', { count: accounts.length })}
+              </option>
+              {accounts.map((option) => (
+                <option key={option} value={option} style={{ color: 'var(--ink)', background: 'var(--surface)' }}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          )}
+
         {years.length > 0 && (
           <select
             className="field field-inline"
@@ -122,6 +176,7 @@ export default function FinancePage() {
             ))}
           </select>
         )}
+        </div>
       </header>
 
       <section className="card p-6">
@@ -264,6 +319,57 @@ export default function FinancePage() {
             <h2 className="text-lg font-semibold">{t('fin.tidy')}</h2>
             <p className="mt-1 max-w-3xl text-sm muted">{t('fin.tidyHint')}</p>
 
+            {unknowns.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-3 panel p-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={picked.size === unknowns.slice(0, 25).length && picked.size > 0}
+                    onChange={() =>
+                      setPicked(
+                        picked.size === unknowns.slice(0, 25).length
+                          ? new Set()
+                          : new Set(unknowns.slice(0, 25).map((group) => group.key))
+                      )
+                    }
+                  />
+                  {t('fin.selectAllUnknown')}
+                </label>
+
+                <select
+                  className="field field-inline text-sm"
+                  value={bulkCategory}
+                  onChange={(event) => setBulkCategory(event.target.value as CategoryId)}
+                >
+                  <option value="" style={{ color: 'var(--ink)', background: 'var(--surface)' }}>
+                    {t('fin.chooseCategory')}…
+                  </option>
+                  {CATEGORY_IDS.filter((id) => id !== 'unknown').map((id) => (
+                    <option key={id} value={id} style={{ color: 'var(--ink)', background: 'var(--surface)' }}>
+                      {categoryLabel(id)}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  className={picked.size > 0 && bulkCategory ? 'btn btn-primary' : 'btn'}
+                  disabled={picked.size === 0 || !bulkCategory}
+                  onClick={applyBulk}
+                >
+                  {t('fin.applyTo')}
+                </button>
+
+                {picked.size > 0 && (
+                  <>
+                    <span className="text-sm muted">{t('fin.selected', { count: picked.size })}</span>
+                    <button className="btn" onClick={() => setPicked(new Set())}>
+                      {t('fin.clearSelection')}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
             {unknowns.length === 0 ? (
               <p className="mt-5 text-sm" style={{ color: 'var(--good)' }}>
                 {t('fin.tidyDone')}
@@ -273,8 +379,14 @@ export default function FinancePage() {
                 {unknowns.slice(0, 25).map((group) => (
                   <div
                     key={group.key}
-                    className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-[var(--line)] pb-2 last:border-0"
+                    className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b border-[var(--line)] pb-2 last:border-0"
                   >
+                    <input
+                      type="checkbox"
+                      checked={picked.has(group.key)}
+                      onChange={() => togglePicked(group.key)}
+                      aria-label={group.label}
+                    />
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium" title={group.label}>
                         {group.label}

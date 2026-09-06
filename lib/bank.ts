@@ -26,11 +26,15 @@ export type BankTransaction = {
   /** The bank's own label, e.g. "Payment terminal". */
   method: string;
   code: string;
+  /** Which of your accounts this belongs to — statements from several can coexist. */
+  account: string;
   category: CategoryId;
   /** A category the user set by hand is never overwritten by a re-import. */
   manualCategory?: boolean;
   /** Marks a private cost as a deductible business one. */
   business?: boolean;
+  /** Money moved between two of your own accounts — excluded from both sides. */
+  internalTransfer?: boolean;
 };
 
 export type ParseResult = {
@@ -39,16 +43,28 @@ export type ParseResult = {
   skipped: number;
   from: string;
   to: string;
+  /** Accounts seen in this file. */
+  accounts: string[];
 };
 
+/**
+ * Column names seen across Dutch bank exports. ING ships English or Dutch headers
+ * depending on the account language; Rabobank, ABN AMRO, bunq and Revolut each name
+ * the same fields differently. Matching on a list of aliases costs nothing and means
+ * a second bank usually just works.
+ */
 const COLUMNS = {
-  date: ['date', 'datum'],
-  description: ['name / description', 'naam / omschrijving', 'omschrijving'],
-  amount: ['amount (eur)', 'bedrag (eur)', 'bedrag'],
-  direction: ['debit/credit', 'af bij', 'af/bij'],
-  code: ['code'],
-  method: ['transaction type', 'mutatiesoort', 'mededelingen'],
-  balance: ['resulting balance', 'saldo na mutatie'],
+  date: ['date', 'datum', 'transactiedatum', 'boekingsdatum', 'started date', 'completed date'],
+  description: [
+    'name / description', 'naam / omschrijving', 'omschrijving', 'omschrijving-1',
+    'naam tegenpartij', 'tegenrekening naam', 'description', 'naam', 'counterparty',
+  ],
+  amount: ['amount (eur)', 'bedrag (eur)', 'bedrag', 'amount', 'bedrag eur', 'transactiebedrag'],
+  direction: ['debit/credit', 'af bij', 'af/bij', 'debet/credit', 'bij/af'],
+  code: ['code', 'mutatiecode', 'type'],
+  method: ['transaction type', 'mutatiesoort', 'mededelingen', 'transactietype'],
+  balance: ['resulting balance', 'saldo na mutatie', 'saldo', 'balance', 'saldo na trn'],
+  account: ['account', 'rekening', 'rekeningnummer', 'iban/bban', 'iban', 'tegenrekening'],
 };
 
 /** Splits one CSV line on `;` or `,`, honouring quotes and doubled quotes. */
@@ -128,12 +144,18 @@ function parseDate(raw: string): string | null {
  * A fingerprint of the fields a bank will not change between exports. Re-importing
  * an overlapping range then updates rows instead of duplicating them.
  */
-function fingerprint(date: string, amount: number, description: string, balance: number | null) {
+function fingerprint(
+  date: string,
+  amount: number,
+  description: string,
+  balance: number | null,
+  account: string
+) {
   const normalised = description.toUpperCase().replace(/\s+/g, ' ').trim().slice(0, 60);
   // The running balance is what separates two identical purchases on the same day
   // from one purchase imported twice.
   const ledger = balance === null ? '' : balance.toFixed(2);
-  return `${date}|${amount.toFixed(2)}|${normalised}|${ledger}`;
+  return `${account}|${date}|${amount.toFixed(2)}|${normalised}|${ledger}`;
 }
 
 export function parseBankCsv(text: string): ParseResult {
@@ -154,11 +176,14 @@ export function parseBankCsv(text: string): ParseResult {
     code: findColumn(header, COLUMNS.code),
     method: findColumn(header, COLUMNS.method),
     balance: findColumn(header, COLUMNS.balance),
+    account: findColumn(header, COLUMNS.account),
   };
 
   if (index.date < 0 || index.amount < 0 || index.description < 0) {
     throw new Error(
-      'That CSV has no date, description and amount columns this importer recognises. It is written for a Dutch bank export such as ING.'
+      `This importer could not find a date, description and amount column. It saw: ${header
+        .filter(Boolean)
+        .join(', ')}. It is written for Dutch bank exports (ING, Rabobank, ABN AMRO); if your bank names its columns differently, send an example and it can be added.`
     );
   }
 
@@ -190,7 +215,8 @@ export function parseBankCsv(text: string): ParseResult {
 
     // Two genuinely identical rows in one statement are still two payments. Counting
     // occurrences keeps them apart without making the id depend on row order.
-    const base = fingerprint(date, amount, description, balance);
+    const account = (index.account >= 0 ? cells[index.account] ?? '' : '').trim();
+    const base = fingerprint(date, amount, description, balance, account);
     const occurrence = (seen.get(base) ?? 0) + 1;
     seen.set(base, occurrence);
 
@@ -202,6 +228,7 @@ export function parseBankCsv(text: string): ParseResult {
       balance,
       method: index.method >= 0 ? cells[index.method] ?? '' : '',
       code,
+      account: (index.account >= 0 ? cells[index.account] ?? '' : '').trim(),
       category: categorise(description, code, isCredit),
     });
   }
@@ -212,7 +239,9 @@ export function parseBankCsv(text: string): ParseResult {
 
   const dates = transactions.map((transaction) => transaction.date).sort();
 
-  return { transactions, skipped, from: dates[0], to: dates[dates.length - 1] };
+  const accounts = [...new Set(transactions.map((t) => t.account).filter(Boolean))];
+
+  return { transactions, skipped, from: dates[0], to: dates[dates.length - 1], accounts };
 }
 
 /**

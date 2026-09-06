@@ -276,10 +276,22 @@ export default function ExpensesPage() {
   }, [expenses, yearFilter]);
 
   const shownTotals = useMemo(() => {
+    const exVat = sumEuros(sortedExpenses.map((expense) => expense.amountExVat));
+
+    // Average over the months that actually have expenses in them, not over twelve.
+    // Dividing a part-year by a full year would understate the real monthly cost.
+    const months = new Set(
+      sortedExpenses
+        .filter((expense) => isUsableBookkeepingDate(expense.date))
+        .map((expense) => expense.date.slice(0, 7))
+    );
+
     return {
-      exVat: sumEuros(sortedExpenses.map((expense) => expense.amountExVat)),
+      exVat,
       vat: sumEuros(sortedExpenses.map((expense) => expense.vatAmount)),
       total: sumEuros(sortedExpenses.map((expense) => expense.totalAmount)),
+      monthCount: months.size,
+      monthlyAverage: months.size > 0 ? exVat / months.size : 0,
     };
   }, [sortedExpenses]);
 
@@ -320,10 +332,19 @@ export default function ExpensesPage() {
       </div>
 
       {expenses.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <div className="card p-5">
             <div className="text-sm faint">{t('exp.exVat')}</div>
             <div className="mt-2 text-2xl font-semibold">{formatCurrency(shownTotals.exVat)}</div>
+          </div>
+          <div className="card p-5">
+            <div className="text-sm faint">{t('exp.monthlyAverage')}</div>
+            <div className="mt-2 text-2xl font-semibold">
+              {formatCurrency(shownTotals.monthlyAverage)}
+            </div>
+            <div className="mt-1 text-xs faint">
+              {t('exp.acrossMonths', { count: shownTotals.monthCount })}
+            </div>
           </div>
           <div className="card p-5">
             <div className="text-sm faint">{t('exp.deductibleVat')}</div>
