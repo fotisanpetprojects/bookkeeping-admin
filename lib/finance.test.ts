@@ -1,0 +1,121 @@
+/**
+ * Tests for the money arithmetic. Run with `npm test`.
+ *
+ * The failure mode these guard against is not a crash — it is a number that looks
+ * plausible and is wrong, which is worse, because it gets believed.
+ */
+
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import type { BankTransaction } from './bank.ts';
+import { detectRecurring, isFixedCommitment, markInternalTransfers, summarise } from './finance.ts';
+
+const BUSINESS = 'NL00BUSI0000000001';
+const PERSONAL = 'NL00PERS0000000002';
+
+function tx(over: Partial<BankTransaction> & { date: string; amount: number }): BankTransaction {
+  return {
+    id: `${over.date}-${over.amount}-${over.description ?? ''}-${over.account ?? ''}`,
+    description: 'Something',
+    balance: null,
+    method: '',
+    code: 'BA',
+    account: PERSONAL,
+    counterparty: '',
+    category: 'unknown',
+    ...over,
+  };
+}
+
+test('money moved between your own accounts is not income, even days apart', () => {
+  const rows = [
+    // Real revenue into the business account.
+    tx({ date: '2026-01-05', amount: 20_000, account: BUSINESS, counterparty: 'NL99CLIE0000000009', category: 'income', description: 'A client' }),
+    // Moved to the personal account — leaves on one day, arrives on the next.
+    tx({ date: '2026-01-12', amount: -10_000, account: BUSINESS, counterparty: PERSONAL, code: 'GT' }),
+    tx({ date: '2026-01-13', amount: 10_000, account: PERSONAL, counterparty: BUSINESS, code: 'GT', category: 'income' }),
+    tx({ date: '2026-01-15', amount: -1_500, account: PERSONAL, counterparty: 'NL22OBVI0000000003', code: 'IC', category: 'housing' }),
+  ];
+
+  const naive = summarise(rows, 2026);
+  assert.equal(naive.moneyIn, 30_000, 'without detection the transfer inflates income');
+
+  const marked = markInternalTransfers(rows);
+  const summary = summarise(marked, 2026);
+
+  assert.equal(summary.moneyIn, 20_000, 'only the client payment is income');
+  assert.equal(summary.spending, 1_500, 'the transfer out is not spending either');
+  assert.equal(summary.internalIn, 10_000);
+  assert.equal(summary.internalOut, 10_000);
+  assert.equal(summary.internalCount, 2);
+});
+
+test('a single account leaves everything alone', () => {
+  // With one account there is no "other account", so nothing may be reclassified.
+  const rows = [
+    tx({ date: '2026-01-05', amount: 500, category: 'income' }),
+    tx({ date: '2026-01-06', amount: -20, category: 'groceries' }),
+  ];
+
+  assert.deepEqual(markInternalTransfers(rows), rows);
+});
+
+test('a payment to someone else is never an internal transfer', () => {
+  const rows = [
+    tx({ date: '2026-01-05', amount: -300, account: BUSINESS, counterparty: 'NL77SOME0000000077', code: 'GT' }),
+    tx({ date: '2026-01-06', amount: 900, account: PERSONAL, counterparty: 'NL88ELSE0000000088', code: 'GT', category: 'income' }),
+  ];
+
+  const marked = markInternalTransfers(rows);
+  assert.ok(!marked.some((row) => row.internalTransfer));
+});
+
+test('a category set by hand survives internal-transfer detection', () => {
+  const rows = [
+    tx({ date: '2026-01-12', amount: -10_000, account: BUSINESS, counterparty: PERSONAL, category: 'housing', manualCategory: true }),
+    tx({ date: '2026-01-13', amount: 10_000, account: PERSONAL, counterparty: BUSINESS, category: 'income' }),
+  ];
+
+  const marked = markInternalTransfers(rows);
+  assert.equal(marked[0].category, 'housing', 'a manual choice is not overwritten');
+  assert.equal(marked[1].category, 'transfers');
+});
+
+test('a direct debit collected most months is a fixed commitment, whatever its category', () => {
+  // A gym at 29.99 that becomes 37.99 mid-year: still a subscription.
+  const gym = [1, 2, 3, 4, 5, 6].map((month) =>
+    tx({
+      date: `2026-0${month}-10`,
+      amount: month < 4 ? -29.99 : -37.99,
+      code: 'IC',
+      description: 'Sportcity',
+      category: 'sports-hobbies',
+    })
+  );
+
+  const recurring = detectRecurring(gym);
+  assert.ok(isFixedCommitment(gym[0], recurring), 'a monthly direct debit is a commitment');
+});
+
+test('a merchant visited often on a card is not a commitment', () => {
+  // Same price every month, but you choose it each time.
+  const barber = [1, 2, 3, 4, 5].map((month) =>
+    tx({ date: `2026-0${month}-10`, amount: -19, code: 'BA', description: 'Barber School', category: 'health' })
+  );
+
+  const recurring = detectRecurring(barber);
+  assert.ok(!isFixedCommitment(barber[0], recurring), 'a card payment stays discretionary');
+});
+
+test('the year is projected on days covered, not months seen', () => {
+  // A statement ending on 4 January: one twelfth of a month, not one month.
+  const rows = [tx({ date: '2026-01-04', amount: -100, category: 'groceries' })];
+  const summary = summarise(rows, 2026);
+
+  assert.equal(summary.daysCovered, 4);
+  assert.ok(
+    summary.projectedSpending > 8_000,
+    `four days at 100 should project far above a month's worth, got ${summary.projectedSpending}`
+  );
+});

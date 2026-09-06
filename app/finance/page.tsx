@@ -11,6 +11,14 @@ const FIXED_CATEGORIES = new Set(
   CATEGORIES.filter((category) => category.fixed).map((category) => category.id)
 );
 import {
+  ACCOUNT_LABELS_KEY,
+  AccountLabel,
+  displayAccount,
+  kindOf,
+  transactionsForKind,
+} from '@/lib/accounts';
+import { normaliseAccount } from '@/lib/bank';
+import {
   availableAccounts,
   availableYears,
   markInternalTransfers,
@@ -81,14 +89,30 @@ export default function FinancePage() {
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [labels] = useLocalStorageState<AccountLabel[]>(ACCOUNT_LABELS_KEY, []);
   const years = useMemo(() => availableYears(transactions), [transactions]);
   const accounts = useMemo(() => availableAccounts(transactions), [transactions]);
+  const hasBusiness = useMemo(
+    () => accounts.some((account) => kindOf(labels, account) === 'business'),
+    [accounts, labels]
+  );
   const activeYear = year ?? years[0] ?? new Date().getFullYear();
 
+  /**
+   * Internal transfers are worked out across *every* account before any filter is
+   * applied. Deciding it after filtering would make a transfer look external simply
+   * because the other side had been filtered away.
+   */
   const scoped = useMemo(() => {
     const marked = markInternalTransfers(transactions);
-    return account === 'all' ? marked : marked.filter((t) => t.account === account);
-  }, [transactions, account]);
+
+    if (account === 'all') return marked;
+    if (account === 'personal' || account === 'business') {
+      return transactionsForKind(marked, labels, account);
+    }
+
+    return marked.filter((t) => normaliseAccount(t.account) === normaliseAccount(account));
+  }, [transactions, account, labels]);
 
   const summary = useMemo(() => summarise(scoped, activeYear), [scoped, activeYear]);
   const unknowns = useMemo(() => unknownByMerchant(scoped, activeYear), [scoped, activeYear]);
@@ -193,11 +217,24 @@ export default function FinancePage() {
               onChange={(event) => setAccount(event.target.value)}
             >
               <option value="all" style={{ color: 'var(--ink)', background: 'var(--surface)' }}>
-                {t('fin.allAccounts', { count: accounts.length })}
+                {t('fin.allAccountsOption')}
               </option>
+
+              {/* Grouping only helps once an account has been marked business. */}
+              {hasBusiness && (
+                <>
+                  <option value="personal" style={{ color: 'var(--ink)', background: 'var(--surface)' }}>
+                    {t('fin.personalOnly')}
+                  </option>
+                  <option value="business" style={{ color: 'var(--ink)', background: 'var(--surface)' }}>
+                    {t('fin.businessOnly')}
+                  </option>
+                </>
+              )}
+
               {accounts.map((option) => (
                 <option key={option} value={option} style={{ color: 'var(--ink)', background: 'var(--surface)' }}>
-                  {option}
+                  {displayAccount(labels, option)}
                 </option>
               ))}
             </select>
@@ -244,7 +281,27 @@ export default function FinancePage() {
       ) : (
         <>
           <section className="grid gap-4 md:grid-cols-3">
-            <Stat label={t('fin.totalOut')} value={formatCurrency(summary.spending)} />
+            <Stat
+              label={t('fin.totalOut')}
+              value={formatCurrency(summary.spending)}
+              sub={
+                summary.internalCount > 0
+                  ? t('fin.internal') + ': ' + formatCurrency(summary.internalIn)
+                  : undefined
+              }
+              onOpen={
+                summary.internalCount > 0
+                  ? () =>
+                      setDrawer({
+                        title: t('fin.internal'),
+                        subtitle: String(activeYear),
+                        filter: (transaction) =>
+                          Boolean(transaction.internalTransfer) &&
+                          transaction.date.startsWith(String(activeYear)),
+                      })
+                  : undefined
+              }
+            />
 
             <Stat
               label={t('fin.fixed')}

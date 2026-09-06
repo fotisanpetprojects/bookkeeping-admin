@@ -2,6 +2,7 @@
 
 import { useT } from '@/lib/i18n';
 import VaultSettings from '@/app/components/VaultSettings';
+import AccountSettings from '@/app/components/AccountSettings';
 import BackupPanel from '@/app/components/BackupPanel';
 import AiImportPanel from '@/app/components/AiImportPanel';
 
@@ -19,6 +20,8 @@ export default function SettingsPage() {
         <h2 className="text-sm uppercase tracking-[0.16em] faint">{t('set.security')}</h2>
         <VaultSettings />
       </section>
+
+      <AccountSettings />
 
       <BackupPanel />
 

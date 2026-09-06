@@ -12,7 +12,7 @@
  *     is stored locally, like every other record in this app
  */
 
-import { CategoryId, categorise } from '@/lib/categories';
+import { type CategoryId, categorise } from './categories.ts';
 
 export type BankTransaction = {
   /** Stable across re-imports of an overlapping period, so nothing is doubled. */
@@ -28,6 +28,12 @@ export type BankTransaction = {
   code: string;
   /** Which of your accounts this belongs to — statements from several can coexist. */
   account: string;
+  /**
+   * The other side's account number, where the bank gives one. Present on transfers
+   * and direct debits, absent on card payments — which is exactly the split that
+   * matters, since only a transfer can be one between your own accounts.
+   */
+  counterparty: string;
   category: CategoryId;
   /** A category the user set by hand is never overwritten by a re-import. */
   manualCategory?: boolean;
@@ -57,14 +63,15 @@ const COLUMNS = {
   date: ['date', 'datum', 'transactiedatum', 'boekingsdatum', 'started date', 'completed date'],
   description: [
     'name / description', 'naam / omschrijving', 'omschrijving', 'omschrijving-1',
-    'naam tegenpartij', 'tegenrekening naam', 'description', 'naam', 'counterparty',
+    'naam tegenpartij', 'tegenrekening naam', 'description', 'naam',
   ],
   amount: ['amount (eur)', 'bedrag (eur)', 'bedrag', 'amount', 'bedrag eur', 'transactiebedrag'],
   direction: ['debit/credit', 'af bij', 'af/bij', 'debet/credit', 'bij/af'],
   code: ['code', 'mutatiecode', 'type'],
   method: ['transaction type', 'mutatiesoort', 'mededelingen', 'transactietype'],
   balance: ['resulting balance', 'saldo na mutatie', 'saldo', 'balance', 'saldo na trn'],
-  account: ['account', 'rekening', 'rekeningnummer', 'iban/bban', 'iban', 'tegenrekening'],
+  account: ['account', 'rekening', 'rekeningnummer', 'iban/bban', 'iban'],
+  counterparty: ['counterparty', 'tegenrekening', 'tegenrekening iban', 'iban tegenpartij'],
 };
 
 /** Splits one CSV line on `;` or `,`, honouring quotes and doubled quotes. */
@@ -118,6 +125,14 @@ function parseAmount(raw: string): number | null {
     : Number(cleaned);
 
   return Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Account numbers are compared, not displayed, so spacing and case must not decide
+ * whether two references to the same account match.
+ */
+export function normaliseAccount(value: string) {
+  return value.replace(/\s+/g, '').toUpperCase();
 }
 
 /** Accepts yyyymmdd, yyyy-mm-dd and dd-mm-yyyy. */
@@ -177,6 +192,7 @@ export function parseBankCsv(text: string): ParseResult {
     method: findColumn(header, COLUMNS.method),
     balance: findColumn(header, COLUMNS.balance),
     account: findColumn(header, COLUMNS.account),
+    counterparty: findColumn(header, COLUMNS.counterparty),
   };
 
   if (index.date < 0 || index.amount < 0 || index.description < 0) {
@@ -229,6 +245,9 @@ export function parseBankCsv(text: string): ParseResult {
       method: index.method >= 0 ? cells[index.method] ?? '' : '',
       code,
       account: (index.account >= 0 ? cells[index.account] ?? '' : '').trim(),
+      counterparty: normaliseAccount(
+        index.counterparty >= 0 ? cells[index.counterparty] ?? '' : ''
+      ),
       category: categorise(description, code, isCredit),
     });
   }
