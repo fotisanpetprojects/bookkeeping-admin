@@ -77,14 +77,30 @@ const RULES: { match: string[]; category: CategoryId }[] = [
   },
   {
     category: 'groceries',
-    match: ['ALBERT HEIJN', 'ALBERTHEIJN', ' AH ', 'AH TO GO', 'JUMBO', 'LIDL', 'ALDI', 'DIRK',
-            'PLUS ', 'SPAR ', 'EKOPLAZA', 'VOMAR', 'COOP ', 'MARQT', 'DEEN', 'PICNIC', 'CROP'],
+    // A merchant that calls itself a supermarket is one, whatever its name — that
+    // generic word places far more shops than any list of chains can.
+    match: ['SUPERMARKT', 'SUPERMARKET', 'MINIMARKT', 'MINI MARKT', 'AVONDWINKEL', 'BUURTWINKEL',
+            'ALBERT HEIJN', 'ALBERTHEIJN', ' AH ', 'AH TO GO', 'JUMBO', 'LIDL', 'ALDI', 'DIRK',
+            'PLUS ', 'SPAR ', 'EKOPLAZA', 'VOMAR', 'COOP ', 'MARQT', 'DEEN', 'PICNIC', 'CROP',
+            'NETTORAMA', 'HOOGVLIET', 'POIESZ', 'JAN LINDERS', 'AMAZING ORIENTAL', 'TOKO ',
+            'SLAGERIJ', 'BAKKERIJ', 'GROENTE', 'VISHANDEL', 'KAASHANDEL', 'NOTENBAR'],
   },
   {
     category: 'eating-out',
-    match: ['RESTAURANT', 'CAFE', 'CAFÉ', 'BAR ', 'THUISBEZORGD', 'UBER EATS', 'UBEREATS',
-            'DELIVEROO', 'STARBUCKS', 'MCDONALD', 'BURGER KING', 'DOMINO', 'NEW YORK PIZZA',
-            'BAKKER', 'BROODJE', 'SUSHI', 'PIZZERIA', 'GALL & GALL', 'SLIJTERIJ'],
+    match: [
+      // What the place calls itself, which covers the long tail of independents.
+      'RESTAURANT', 'CAFE', 'CAFÉ', 'EETCAFE', 'BAR ', 'BISTRO', 'BRASSERIE', 'LUNCHROOM',
+      'SNACKBAR', 'CAFETARIA', 'FRITUUR', 'GRILLROOM', 'SHOARMA', 'KEBAB', 'PIZZERIA',
+      'SUSHI', 'RAMEN', 'POKE', 'TAPAS', 'IJSSALON', 'KOFFIE', 'COFFEE', 'ESPRESSO',
+      'BROODJE', 'BAKKER', 'PATISSERIE', 'PANNENKOEK', 'PUB ', 'BREWER', 'BROUWERIJ',
+      // Chains, including abroad — a burger in Paris is still eating out.
+      'THUISBEZORGD', 'UBER EATS', 'UBEREATS', 'DELIVEROO', 'STARBUCKS', 'MCDONALD',
+      'BURGER KING', 'KFC', 'FEBO', 'SUBWAY', 'DOMINO', 'NEW YORK PIZZA', 'POPEYES',
+      'FIVE GUYS', 'TACO BELL', 'DUNKIN', 'LA PLACE', 'JULIA', 'VAPIANO', 'HAPPY ITALY',
+      'LOETJE', 'BAGELS', 'COSTA COFFEE', 'PRET A MANGER', 'PAUL ',
+      // Drink shops sit here rather than groceries: it is discretionary spending.
+      'GALL & GALL', 'SLIJTERIJ', 'MITRA ',
+    ],
   },
   {
     category: 'transport',

@@ -359,17 +359,30 @@ export default function FinancePage() {
             </div>
 
             <div className="card p-6">
-              <h2 className="text-lg font-semibold">{t('fin.breakdown')}</h2>
-              <p className="mt-1 text-sm muted">{t('fin.breakdownHint')}</p>
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                {t('fin.breakdown')}
 
-              {summary.unknownCount > 0 && (
-                <div className="mt-4 panel p-3 text-sm text-[var(--warn)]">
-                  {t('fin.unknownWarning', {
-                    amount: formatCurrency(summary.unknownSpend),
-                    count: summary.unknownCount,
-                  })}
-                </div>
-              )}
+                {/* A warning block here pushed this panel taller than the one beside
+                    it. The caveat still needs saying, so it hides behind a mark. */}
+                {summary.unknownCount > 0 && (
+                  <span
+                    className="warn-mark"
+                    tabIndex={0}
+                    role="note"
+                    aria-label={t('fin.unknownWarning', {
+                      amount: formatCurrency(summary.unknownSpend),
+                      count: summary.unknownCount,
+                    })}
+                    data-tip={t('fin.unknownWarning', {
+                      amount: formatCurrency(summary.unknownSpend),
+                      count: summary.unknownCount,
+                    })}
+                  >
+                    !
+                  </span>
+                )}
+              </h2>
+              <p className="mt-1 text-sm muted">{t('fin.breakdownHint')}</p>
 
               <div className="mt-5">
                 <CategoryBars
