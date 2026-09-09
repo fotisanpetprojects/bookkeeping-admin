@@ -23,10 +23,15 @@ export type AccountLabel = {
   name: string;
   kind: AccountKind;
   /**
-   * This account exists to move money, not to earn or spend it. Everything arriving
-   * from it or leaving to it is a transfer, whether or not the other statement has
-   * been imported — which is how a savings pot at another bank gets handled without
-   * importing it at all.
+   * Whether transfers involving this account count as moving your own money.
+   *
+   * Undefined means yes: an imported account is yours, so by default a payment
+   * between it and another of yours is not income or spending. Setting it to false
+   * opts out, and the transfers are counted like anyone else's.
+   *
+   * It has to be a real switch rather than a hint, because otherwise turning it off
+   * appears to do nothing — detection would simply carry on regardless, which is
+   * exactly how it behaved before.
    */
   internalOnly?: boolean;
 };
@@ -56,11 +61,26 @@ export function labelFor(labels: AccountLabel[], account: string): AccountLabel 
   return found ?? { account: key, name: '', kind: 'personal' };
 }
 
-/** Accounts the user has said are only for moving money between their own. */
-export function internalAccounts(labels: AccountLabel[]) {
-  return new Set(
-    labels.filter((label) => label.internalOnly).map((label) => normaliseAccount(label.account))
+/**
+ * The accounts whose transfers count as moving your own money: every imported one
+ * except those switched off, plus any declared by hand.
+ */
+export function internalAccounts(labels: AccountLabel[], imported: string[]) {
+  const optedOut = new Set(
+    labels
+      .filter((label) => label.internalOnly === false)
+      .map((label) => normaliseAccount(label.account))
   );
+
+  const declared = labels
+    .filter((label) => label.internalOnly === true)
+    .map((label) => normaliseAccount(label.account));
+
+  const included = imported
+    .map(normaliseAccount)
+    .filter((account) => account && !optedOut.has(account));
+
+  return new Set([...included, ...declared]);
 }
 
 export function kindOf(labels: AccountLabel[], account: string) {

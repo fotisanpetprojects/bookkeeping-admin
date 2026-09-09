@@ -9,7 +9,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { type BankTransaction, mergeTransactions } from './bank.ts';
-import { detectRecurring, isFixedCommitment, markInternalTransfers, summarise } from './finance.ts';
+import {
+  detectRecurring,
+  isFixedCommitment,
+  markInternalTransfers,
+  reconcile,
+  summarise,
+} from './finance.ts';
 
 const BUSINESS = 'NL00BUSI0000000001';
 const PERSONAL = 'NL00PERS0000000002';
@@ -229,6 +235,40 @@ test('money moved in is listed as a source but claims no share of income', () =>
 
   // Real income sorts above moved money.
   assert.equal(summary.incomeSources[0].internal, false);
+});
+
+test('reconciliation finds the true first and last rows when a day holds several', () => {
+  // Three payments on the same day. Date order cannot say which came last, and
+  // guessing wrong makes the closing balance wrong — which reported a discrepancy
+  // of 14.98 on a real statement that in fact balanced exactly.
+  // A real ledger: 1000.00 opening, each balance the one before plus the amount.
+  // Deliberately shuffled, and the three 09-04 rows are given out of ledger order.
+  const rows = [
+    tx({ date: '2026-09-04', amount: -37.99, balance: 713.26, category: 'sports-hobbies' }),
+    tx({ date: '2026-01-02', amount: -148.75, balance: 851.25, category: 'insurance' }),
+    tx({ date: '2026-09-04', amount: -9.0, balance: 698.26, category: 'eating-out' }),
+    tx({ date: '2026-05-01', amount: -100.0, balance: 751.25, category: 'housing' }),
+    tx({ date: '2026-09-04', amount: -6.0, balance: 707.26, category: 'groceries' }),
+  ];
+
+  const [check] = reconcile(rows, 2026);
+
+  assert.equal(check.openingBalance, 1_000, 'opening is the first row less its own amount');
+  assert.equal(check.closingBalance, 698.26, 'closing is the true last row, not the latest by date');
+  assert.equal(check.bankMovement, check.sumOfRows, 'the bank and the rows agree');
+  assert.ok(check.balances);
+});
+
+test('reconciliation reports a real discrepancy rather than hiding it', () => {
+  // A row missing from the export: the balances jump without a transaction to explain it.
+  const rows = [
+    tx({ date: '2026-01-01', amount: -10, balance: 990, category: 'groceries' }),
+    tx({ date: '2026-01-03', amount: -10, balance: 880, category: 'groceries' }),
+  ];
+
+  const [check] = reconcile(rows, 2026);
+  assert.equal(check.balances, false, 'a gap must be surfaced, not smoothed over');
+  assert.ok(Math.abs(check.difference) > 0);
 });
 
 test('the year is projected on days covered, not months seen', () => {

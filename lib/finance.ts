@@ -165,15 +165,17 @@ export function availableAccounts(transactions: BankTransaction[]) {
  */
 export function markInternalTransfers(
   transactions: BankTransaction[],
-  /** Accounts the user has switched to transfers-only, imported or not. */
-  declaredInternal: Set<string> = new Set()
+  /**
+   * The accounts that count as yours for this purpose. When omitted every imported
+   * account counts, which is the sensible default; the caller passes an explicit set
+   * so a switch turned off actually excludes one.
+   */
+  ownAccounts?: Set<string>
 ) {
   const imported = new Set(transactions.map((t) => normaliseAccount(t.account)).filter(Boolean));
+  const mine = ownAccounts ?? imported;
 
-  // Two imported accounts imply transfers between them; one declared account is
-  // enough on its own, since the user has said so outright.
-  const mine = new Set([...imported, ...declaredInternal]);
-  if (imported.size < 2 && declaredInternal.size === 0) return transactions;
+  if (mine.size === 0) return transactions;
 
   return transactions.map((transaction) => {
     if (transaction.manualCategory) return transaction;
@@ -194,6 +196,132 @@ export function markInternalTransfers(
 
     return { ...transaction, category: 'transfers' as CategoryId, internalTransfer: true };
   });
+}
+
+export type Reconciliation = {
+  account: string;
+  openingBalance: number;
+  closingBalance: number;
+  /** What the bank's own running balance says actually happened. */
+  bankMovement: number;
+  /** What every transaction on the account adds up to. */
+  sumOfRows: number;
+  moneyIn: number;
+  spending: number;
+  internal: number;
+  investments: number;
+  transfersOut: number;
+  difference: number;
+  balances: boolean;
+};
+
+/**
+ * Checks the page's arithmetic against the bank's own running balance.
+ *
+ * Every classification here is a judgement — what counts as spending, what is a
+ * transfer, what is investment. The one thing that is not a judgement is the
+ * balance the bank printed on each line. If the rows between two balances do not
+ * add up to the difference between them, something is being counted twice or not
+ * at all, and no amount of confidence in the categories fixes that.
+ *
+ * This is the check that would have caught the transfers bug on its own.
+ */
+export function reconcile(transactions: BankTransaction[], year: number): Reconciliation[] {
+  const byAccount = new Map<string, BankTransaction[]>();
+
+  for (const transaction of transactions) {
+    if (!transaction.date.startsWith(String(year))) continue;
+    if (transaction.balance === null) continue;
+
+    const key = normaliseAccount(transaction.account);
+    byAccount.set(key, [...(byAccount.get(key) ?? []), transaction]);
+  }
+
+  return [...byAccount.entries()].map(([account, rows]) => {
+    const ordered = rows;
+    const { first, last } = ledgerBounds(rows);
+
+    // The balance before the first row is that row's balance minus the row itself.
+    const openingBalance = (first.balance ?? 0) - first.amount;
+    const closingBalance = last.balance ?? 0;
+
+    const bankMovement = closingBalance - openingBalance;
+    const sumOfRows = ordered.reduce((sum, row) => sum + row.amount, 0);
+
+    const spending = ordered.filter(isSpending).reduce((sum, r) => sum + Math.abs(r.amount), 0);
+    const moneyIn = ordered
+      .filter((r) => r.amount > 0 && !r.internalTransfer && r.category !== 'transfers')
+      .reduce((sum, r) => sum + r.amount, 0);
+    const internal = ordered
+      .filter((r) => r.internalTransfer)
+      .reduce((sum, r) => sum + r.amount, 0);
+    const investments = ordered
+      .filter((r) => r.category === 'investments')
+      .reduce((sum, r) => sum + r.amount, 0);
+    const transfersOut = ordered
+      .filter((r) => !r.internalTransfer && r.category === 'transfers')
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    const difference = roundTo(bankMovement - sumOfRows);
+
+    return {
+      account,
+      openingBalance,
+      closingBalance,
+      bankMovement: roundTo(bankMovement),
+      sumOfRows: roundTo(sumOfRows),
+      moneyIn: roundTo(moneyIn),
+      spending: roundTo(spending),
+      internal: roundTo(internal),
+      investments: roundTo(investments),
+      transfersOut: roundTo(transfersOut),
+      difference,
+      // A cent of float drift is not a discrepancy worth reporting.
+      balances: Math.abs(difference) < 0.02,
+    };
+  });
+}
+
+function roundTo(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+const cents = (value: number) => Math.round(value * 100);
+
+/**
+ * Finds the first and last rows of a statement as the bank posted it.
+ *
+ * Sorting by date is not enough: several payments share a day and the date says
+ * nothing about their order within it. Picking the wrong one as last made the
+ * closing balance wrong and the reconciliation report a 14.98 discrepancy on a real
+ * statement that in fact balanced to the cent.
+ *
+ * The running balance settles it. Every row begins at the balance the row before it
+ * ended on, so the first row is the only one nothing else ends where it begins, and
+ * the last is the only one nothing else begins where it ends.
+ *
+ * Only the two ends are worked out, not the whole order. Walking the chain looks
+ * tempting and breaks on real data: money out and straight back in revisits a
+ * balance, so several rows share one, and a greedy walk takes the wrong branch and
+ * stops early.
+ */
+function ledgerBounds(rows: BankTransaction[]) {
+  const byDate = [...rows].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  if (byDate.length < 2) return { first: byDate[0], last: byDate[byDate.length - 1] };
+
+  const endsAt = new Set(byDate.map((row) => cents(row.balance ?? 0)));
+  const beginsAt = new Set(byDate.map((row) => cents((row.balance ?? 0) - row.amount)));
+
+  const heads = byDate.filter((row) => !endsAt.has(cents((row.balance ?? 0) - row.amount)));
+  const tails = byDate.filter((row) => !beginsAt.has(cents(row.balance ?? 0)));
+
+  // Anything but one of each means the chain is broken — a gap in the export, or two
+  // statements merged. Date order is then the best answer available.
+  if (heads.length !== 1 || tails.length !== 1) {
+    return { first: byDate[0], last: byDate[byDate.length - 1] };
+  }
+
+  return { first: heads[0], last: tails[0] };
 }
 
 export function availableYears(transactions: BankTransaction[]) {
@@ -315,11 +443,9 @@ export function summarise(transactions: BankTransaction[], year: number): Financ
       // Share is of real income, so an internal line has none to claim.
       share: !value.internal && moneyIn > 0 ? value.total / moneyIn : 0,
     }))
-    .sort((a, b) => {
-      // Real income first; moved money sits underneath it.
-      if (a.internal !== b.internal) return a.internal ? 1 : -1;
-      return b.total - a.total;
-    });
+    // Largest first, moved money included. Sorting it to the bottom would reorder
+    // the list on a toggle and lose the reader's place.
+    .sort((a, b) => b.total - a.total);
 
   const monthsWithData = lastMonthWithData + 1;
 

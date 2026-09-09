@@ -21,6 +21,7 @@ import {
 } from '@/lib/accounts';
 import { normaliseAccount } from '@/lib/bank';
 import AccountStrip from '@/app/components/AccountStrip';
+import ReconcilePanel from '@/app/components/ReconcilePanel';
 import InfoMark from '@/app/components/InfoMark';
 import {
   availableAccounts,
@@ -113,7 +114,7 @@ export default function FinancePage() {
    * because the other side had been filtered away.
    */
   const scoped = useMemo(() => {
-    const marked = markInternalTransfers(transactions, internalAccounts(labels));
+    const marked = markInternalTransfers(transactions, internalAccounts(labels, accounts));
 
     if (account === 'all') return marked;
     if (account === 'personal' || account === 'business') {
@@ -121,7 +122,7 @@ export default function FinancePage() {
     }
 
     return marked.filter((t) => normaliseAccount(t.account) === normaliseAccount(account));
-  }, [transactions, account, labels]);
+  }, [transactions, account, labels, accounts]);
 
   const summary = useMemo(() => summarise(scoped, activeYear), [scoped, activeYear]);
   const unknowns = useMemo(() => unknownByMerchant(scoped, activeYear), [scoped, activeYear]);
@@ -324,6 +325,15 @@ export default function FinancePage() {
             year={activeYear}
           />
 
+          <ReconcilePanel
+            transactions={scoped}
+            labels={labels}
+            accounts={accounts}
+            year={activeYear}
+            spending={summary.spending}
+            monthsWithData={summary.monthsWithData}
+          />
+
           <section className="grid gap-4 md:grid-cols-3">
             <Stat
               label={t('fin.totalOut')}
@@ -436,7 +446,6 @@ export default function FinancePage() {
                 {t('fin.incoming')}
                 <InfoMark text={t('info.incoming')} />
               </h2>
-              <p className="mt-1 text-sm muted">{t('fin.incomingHint')}</p>
 
               <div className="mt-5">
                 {summary.incomeSources.length === 0 ? (
@@ -496,7 +505,6 @@ export default function FinancePage() {
                   </span>
                 )}
               </h2>
-              <p className="mt-1 text-sm muted">{t('fin.breakdownHint')}</p>
 
               <div className="mt-5">
                 <CategoryBars
@@ -523,7 +531,6 @@ export default function FinancePage() {
                 />
               </div>
 
-              <p className="mt-4 text-xs faint">{t('fin.recurringNote')}</p>
             </div>
           </section>
 
@@ -532,7 +539,6 @@ export default function FinancePage() {
               {t('fin.tidy')}
               <InfoMark text={t('info.tidy')} />
             </h2>
-            <p className="mt-1 max-w-3xl text-sm muted">{t('fin.tidyHint')}</p>
 
             {unknowns.length > 0 && (
               <div className="mt-4 flex flex-wrap items-center gap-3 panel p-3">

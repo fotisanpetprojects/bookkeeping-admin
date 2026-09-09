@@ -410,6 +410,25 @@ export const STRINGS = {
     nl: 'Alle {count} geïmporteerde transacties verwijderen, inclusief categorieën die je zelf hebt ingesteld? Je facturen en uitgaven blijven ongemoeid.',
   },
 
+  'rec.title': { en: 'Does this add up?', nl: 'Klopt het?' },
+  'rec.info': {
+    en: 'Every category on this page is a judgement. The balance your bank printed on each line is not. This checks the two against each other: opening balance, plus everything that moved, should equal the closing balance. If it does, nothing is being counted twice or missed.',
+    nl: 'Elke categorie op deze pagina is een inschatting. Het saldo dat je bank op elke regel afdrukt niet. Dit vergelijkt beide: beginsaldo plus alles wat er bewoog hoort gelijk te zijn aan het eindsaldo. Klopt dat, dan wordt er niets dubbel geteld of overgeslagen.',
+  },
+  'rec.balances': { en: 'Balances to the cent', nl: 'Klopt tot op de cent' },
+  'rec.mismatch': { en: 'Off by {amount}', nl: '{amount} verschil' },
+  'rec.opening': { en: 'Opening balance', nl: 'Beginsaldo' },
+  'rec.closing': { en: 'Closing balance', nl: 'Eindsaldo' },
+  'rec.bankSays': { en: 'Bank says moved', nl: 'Bank zegt beweging' },
+  'rec.rowsSay': { en: 'Transactions add up to', nl: 'Transacties tellen op tot' },
+  'rec.moneyIn': { en: 'Money in', nl: 'Inkomend' },
+  'rec.spending': { en: 'Spending', nl: 'Uitgaven' },
+  'rec.investments': { en: 'Investments', nl: 'Beleggingen' },
+  'rec.transfersOut': { en: 'Transfers out', nl: 'Overboekingen uit' },
+  'rec.internal': { en: 'Between your accounts', nl: 'Tussen eigen rekeningen' },
+  'rec.perMonth': { en: 'Spending per month', nl: 'Uitgaven per maand' },
+  'rec.months': { en: 'over {count} month(s) with data', nl: 'over {count} maand(en) met data' },
+
   'acs.title': { en: '{count} accounts imported', nl: '{count} rekeningen geïmporteerd' },
   'acs.info': {
     en: 'Each imported statement gets its own colour. Switch an account to transfers-only if it just moves money between accounts you own — money going there is not spending, and money coming from it is not income.',

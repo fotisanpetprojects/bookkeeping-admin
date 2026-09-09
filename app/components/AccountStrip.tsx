@@ -93,7 +93,7 @@ export default function AccountStrip({
                   type="checkbox"
                   role="switch"
                   className="switch"
-                  checked={Boolean(label.internalOnly)}
+                  checked={label.internalOnly !== false}
                   onChange={(event) => onToggleInternal(account, event.target.checked)}
                 />
                 {t('acs.transfersOnly')}
