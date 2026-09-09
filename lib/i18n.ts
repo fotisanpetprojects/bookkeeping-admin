@@ -275,6 +275,51 @@ export const STRINGS = {
     en: '{amount} across {count} transaction(s) is still uncategorised, so the split below is incomplete.',
     nl: '{amount} verdeeld over {count} transactie(s) is nog niet gerubriceerd, dus de verdeling hieronder is onvolledig.',
   },
+
+  // Validation and outcome messages. These were English string literals in the
+  // pages, so a Dutch reader got English the moment anything went wrong.
+  'msg.fillClientFields': {
+    en: 'Please fill in company name, street address, and postal code/city.',
+    nl: 'Vul bedrijfsnaam, adres en postcode/plaats in.',
+  },
+  'msg.fillExpense': {
+    en: 'Please fill in date, supplier and amount.',
+    nl: 'Vul datum, leverancier en bedrag in.',
+  },
+  'msg.expenseDateRange': {
+    en: 'That date is outside the range this app accepts, and cannot be in the future.',
+    nl: 'Die datum valt buiten het bereik dat deze app accepteert, en mag niet in de toekomst liggen.',
+  },
+  'msg.amountInvalid': { en: 'Amount ex VAT must be a valid number.', nl: 'Bedrag excl. BTW moet een geldig getal zijn.' },
+  'msg.customVatInvalid': { en: 'Please enter a valid custom VAT %.', nl: 'Voer een geldig aangepast BTW-percentage in.' },
+  'msg.expenseSaved': { en: 'Saved the expense from {supplier}.', nl: 'Uitgave van {supplier} opgeslagen.' },
+  'msg.expenseUpdated': { en: 'Updated the expense from {supplier}.', nl: 'Uitgave van {supplier} bijgewerkt.' },
+  'msg.expenseDeleted': { en: 'Deleted the expense from {supplier}.', nl: 'Uitgave van {supplier} verwijderd.' },
+  'msg.fillInvoice': {
+    en: 'Please fill in invoice number, invoice date, period, description, hours, and rate.',
+    nl: 'Vul factuurnummer, factuurdatum, periode, omschrijving, uren en tarief in.',
+  },
+  'msg.completeProfile': { en: 'Please complete your business profile first.', nl: 'Maak eerst je bedrijfsprofiel compleet.' },
+  'msg.selectClient': { en: 'Please select a saved client profile.', nl: 'Kies een opgeslagen klantprofiel.' },
+  'msg.invoiceDateRange': {
+    en: 'Invoice date must be within the last year and no more than a year ahead.',
+    nl: 'De factuurdatum moet binnen het afgelopen jaar liggen en maximaal een jaar vooruit.',
+  },
+  'msg.hoursPositive': { en: 'Hours must be greater than 0.', nl: 'Uren moeten groter dan 0 zijn.' },
+  'msg.ratePositive': { en: 'Rate must be greater than 0.', nl: 'Tarief moet groter dan 0 zijn.' },
+  'msg.invoiceDeleted': { en: 'Deleted invoice {number}.', nl: 'Factuur {number} verwijderd.' },
+  'msg.backupDownloaded': {
+    en: 'Backup downloaded. Keep it somewhere outside this browser.',
+    nl: 'Back-up gedownload. Bewaar hem ergens buiten deze browser.',
+  },
+  'msg.backupFailed': { en: 'Could not generate the backup file.', nl: 'Kon het back-upbestand niet maken.' },
+  'msg.safetyBackupFailed': {
+    en: 'Could not download the safety backup, so nothing was replaced.',
+    nl: 'Kon de veiligheidsback-up niet downloaden, dus er is niets vervangen.',
+  },
+  'msg.settingsFailed': { en: 'Could not save these settings.', nl: 'Kon deze instellingen niet opslaan.' },
+  'msg.fileUnreadable': { en: 'Could not read that file.', nl: 'Kon dat bestand niet lezen.' },
+
   'common.confirm': { en: 'Confirm', nl: 'Bevestigen' },
   'inv.deleteConfirm': {
     en: 'Delete invoice {number} ({amount})? This cannot be undone.',

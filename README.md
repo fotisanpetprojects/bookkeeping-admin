@@ -29,11 +29,11 @@ That tradeoff keeps the product lightweight, inexpensive to run, and well scoped
 - `Profiles`: reusable sender and client billing details, including a letterhead
 - `Expenses`: log costs, VAT rates and receipts, filtered by year
 - `VAT Summary`: net BTW per quarter, with each quarter markable as filed and paid so the headline shows what is *still* owed
-- `Finance`: import a bank CSV and see where the money comes from and goes, what is a fixed commitment versus flexible spending, and where the year lands — parsed in the browser, never uploaded
+- `Finance`: import a bank CSV from one or more accounts and see where the money comes from and goes, what is a fixed commitment versus flexible spending, and where the year lands. Money moved between your own accounts is never counted as either, and the figures reconcile against the balance your bank printed — parsed in the browser, never uploaded
 - `Belastingdienst`: the whole tax year — receivables, VAT, an income tax estimate with every step shown, and a projection to 31 December
 - `Language`: full NL/EN switch; English shows Dutch tax terms alongside, since those are the words on the actual forms
 - `Theme`: light and dark, following your system by default with a manual override
-- `Settings`: passphrase and recovery code, auto-lock, backup and restore, AI import
+- `Settings`: passphrase and recovery code, auto-lock, bank accounts, backup and restore, AI import
 - `Encryption`: set a passphrase and everything in the browser is encrypted at rest — see [docs/SECURITY.md](docs/SECURITY.md)
 - `Local persistence`: everything stored in browser `localStorage`
 - `Backup & restore`: export all data to JSON, and merge or replace it back

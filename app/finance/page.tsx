@@ -1,7 +1,7 @@
 'use client';
 
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
-import { useLocalStorageState } from '@/lib/local-storage';
+import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
 import { StringKey, useT } from '@/lib/i18n';
 import { formatCurrency } from '@/lib/billing';
 import { BankTransaction, mergeTransactions, parseBankCsv } from '@/lib/bank';
@@ -22,6 +22,7 @@ import {
 import { normaliseAccount } from '@/lib/bank';
 import AccountStrip from '@/app/components/AccountStrip';
 import ReconcilePanel from '@/app/components/ReconcilePanel';
+import { useConfirm } from '@/app/components/Confirm';
 import InfoMark from '@/app/components/InfoMark';
 import {
   availableAccounts,
@@ -33,7 +34,6 @@ import {
 } from '@/lib/finance';
 import { CategoryBar, CategoryBars, ProjectionChart } from '@/app/components/charts';
 import TransactionDrawer from '@/app/components/TransactionDrawer';
-import ConfirmDelete from '@/app/components/ConfirmDelete';
 import { isSpending } from '@/lib/finance';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -78,6 +78,7 @@ function Stat({ label, value, sub, tone, onOpen, info }: {
 
 export default function FinancePage() {
   const { t } = useT();
+  const confirm = useConfirm();
   const [transactions, setTransactions] = useLocalStorageState<BankTransaction[]>(
     'bank-transactions',
     []
@@ -90,7 +91,6 @@ export default function FinancePage() {
     { title: string; subtitle?: string; filter: (t: BankTransaction) => boolean } | null
   >(null);
   const [showAllUnknown, setShowAllUnknown] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<{ ids: string[]; message: string } | null>(null);
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useLocalStorageState(
     'skip-delete-confirm',
     false
@@ -141,7 +141,7 @@ export default function FinancePage() {
       const parsed = parseBankCsv(await file.text());
       const { merged, added, duplicates } = mergeTransactions(transactions, parsed.transactions);
 
-      setTransactions(merged);
+      if (!save(merged)) return;
       setYear(Number(parsed.to.slice(0, 4)));
       setNotice(
         t('fin.imported', {
@@ -152,7 +152,7 @@ export default function FinancePage() {
         })
       );
     } catch (importError) {
-      setError(importError instanceof Error ? importError.message : 'Could not read that file.');
+      setError(importError instanceof Error ? importError.message : t('msg.fileUnreadable'));
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -160,9 +160,26 @@ export default function FinancePage() {
     }
   };
 
+  /**
+   * Every write here goes through one place, so a storage failure is reported the
+   * same way wherever it happens. A thousand transactions is a lot to hold in a
+   * browser, and a save that quietly fails is worse than one that refuses.
+   */
+  const save = (next: BankTransaction[]) => {
+    try {
+      setTransactions(next);
+      setError('');
+      return true;
+    } catch (storageError) {
+      setNotice('');
+      setError(describeStorageError(storageError));
+      return false;
+    }
+  };
+
   /** Applies a category to every transaction from one merchant, and remembers it. */
   const assignMerchant = (key: string, category: CategoryId) => {
-    setTransactions(
+    save(
       transactions.map((transaction) =>
         merchantKey(transaction.description) === key
           ? { ...transaction, category, manualCategory: true }
@@ -183,15 +200,18 @@ export default function FinancePage() {
   const applyBulk = () => {
     if (!bulkCategory || picked.size === 0) return;
 
-    setTransactions(
-      transactions.map((transaction) =>
-        picked.has(merchantKey(transaction.description)) && transaction.category === 'unknown'
-          ? { ...transaction, category: bulkCategory, manualCategory: true }
-          : transaction
+    if (
+      save(
+        transactions.map((transaction) =>
+          picked.has(merchantKey(transaction.description)) && transaction.category === 'unknown'
+            ? { ...transaction, category: bulkCategory, manualCategory: true }
+            : transaction
+        )
       )
-    );
-    setPicked(new Set());
-    setBulkCategory('');
+    ) {
+      setPicked(new Set());
+      setBulkCategory('');
+    }
   };
 
   const setInternalOnly = (account: string, internalOnly: boolean) => {
@@ -209,17 +229,28 @@ export default function FinancePage() {
 
   const deleteIds = (ids: string[]) => {
     const doomed = new Set(ids);
-    setTransactions(transactions.filter((transaction) => !doomed.has(transaction.id)));
-    setPicked(new Set());
+    if (save(transactions.filter((transaction) => !doomed.has(transaction.id)))) {
+      setPicked(new Set());
+    }
   };
 
   /** Confirms once, unless the user has said not to ask again. */
-  const requestDelete = (ids: string[], message: string) => {
+  const requestDelete = async (ids: string[], message: string) => {
     if (skipDeleteConfirm) {
       deleteIds(ids);
       return;
     }
-    setPendingDelete({ ids, message });
+
+    const { confirmed, remember } = await confirm({
+      message,
+      confirmLabel: t('fin.delete'),
+      danger: true,
+      offerRemember: true,
+    });
+
+    if (!confirmed) return;
+    if (remember) setSkipDeleteConfirm(true);
+    deleteIds(ids);
   };
 
   const hasData = transactions.length > 0;
@@ -692,18 +723,6 @@ export default function FinancePage() {
           onDelete={(transaction) =>
             requestDelete([transaction.id], t('fin.deleteOneConfirm'))
           }
-        />
-      )}
-
-      {pendingDelete && (
-        <ConfirmDelete
-          message={pendingDelete.message}
-          onCancel={() => setPendingDelete(null)}
-          onConfirm={(remember) => {
-            if (remember) setSkipDeleteConfirm(true);
-            deleteIds(pendingDelete.ids);
-            setPendingDelete(null);
-          }}
         />
       )}
     </div>

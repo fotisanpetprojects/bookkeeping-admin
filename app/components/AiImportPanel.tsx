@@ -29,7 +29,7 @@ export default function AiImportPanel() {
     try {
       setSettings({ ...settings, ...patch });
     } catch {
-      setError('Could not save these settings.');
+      setError(t('msg.settingsFailed'));
     }
   };
 

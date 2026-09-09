@@ -61,10 +61,10 @@ export default function BackupPanel() {
 
     try {
       downloadBackup();
-      setNotice('Backup downloaded. Keep it somewhere outside this browser.');
+      setNotice(t('msg.backupDownloaded'));
     } catch {
       setNotice('');
-      setError('Could not generate the backup file.');
+      setError(t('msg.backupFailed'));
     }
   };
 
@@ -105,7 +105,7 @@ export default function BackupPanel() {
       try {
         downloadBackup();
       } catch {
-        setError('Could not download the safety backup, so nothing was replaced.');
+        setError(t('msg.safetyBackupFailed'));
         return;
       }
     }

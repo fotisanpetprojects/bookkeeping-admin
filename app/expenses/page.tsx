@@ -187,7 +187,7 @@ export default function ExpensesPage() {
 
     const removed = persist(
       expenses.filter((item) => item.id !== expense.id),
-      `Deleted the expense from ${expense.supplier}.`
+      t('msg.expenseDeleted', { supplier: expense.supplier })
     );
 
     if (removed && editingId === expense.id) {
@@ -200,19 +200,19 @@ export default function ExpensesPage() {
     setNotice('');
 
     if (!date || !supplier.trim() || !amountExVat) {
-      setError('Please fill in date, supplier and amount.');
+      setError(t('msg.fillExpense'));
       return;
     }
 
     if (date < minDate || date > today) {
-      setError('Date must be within the last 1 year and not in the future.');
+      setError(t('msg.expenseDateRange'));
       return;
     }
 
     const exVat = Number(amountExVat);
 
     if (Number.isNaN(exVat) || exVat < 0) {
-      setError('Amount ex VAT must be a valid number.');
+      setError(t('msg.amountInvalid'));
       return;
     }
 
@@ -220,7 +220,7 @@ export default function ExpensesPage() {
       vatSelection === 'custom' &&
       (customVatRate === '' || Number(customVatRate) < 0)
     ) {
-      setError('Please enter a valid custom VAT %.');
+      setError(t('msg.customVatInvalid'));
       return;
     }
 
@@ -242,7 +242,7 @@ export default function ExpensesPage() {
         return expense.id === editingId ? { ...expense, ...fields } : expense;
       });
 
-      if (persist(updated, `Updated the expense from ${fields.supplier}.`)) {
+      if (persist(updated, t('msg.expenseUpdated', { supplier: fields.supplier }))) {
         resetForm();
       }
 
@@ -251,7 +251,7 @@ export default function ExpensesPage() {
 
     const newExpense: Expense = { id: Date.now(), ...fields };
 
-    if (persist([...expenses, newExpense], `Saved the expense from ${fields.supplier}.`)) {
+    if (persist([...expenses, newExpense], t('msg.expenseSaved', { supplier: fields.supplier }))) {
       resetForm();
     }
   };

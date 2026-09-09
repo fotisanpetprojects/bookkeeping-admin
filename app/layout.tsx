@@ -5,6 +5,7 @@ import ThemeToggle from '@/app/components/ThemeToggle';
 import SeedLoader from '@/app/components/SeedLoader';
 import VaultGate from '@/app/components/VaultGate';
 import ConfirmProvider from '@/app/components/Confirm';
+import SaveWarning from '@/app/components/SaveWarning';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className="min-h-screen">
         <div className="min-h-screen">
           <SeedLoader />
+          <SaveWarning />
           <ConfirmProvider>
           <VaultGate>
           <header className="app-header">

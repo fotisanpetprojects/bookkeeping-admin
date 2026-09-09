@@ -327,7 +327,7 @@ export default function ClientsPage() {
       !clientForm.streetAddress.trim() ||
       !clientForm.postalCodeCity.trim()
     ) {
-      setError('Please fill in company name, street address, and postal code/city.');
+      setError(t('msg.fillClientFields'));
       return;
     }
 

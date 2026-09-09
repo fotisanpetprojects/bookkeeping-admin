@@ -115,13 +115,50 @@ function scheduleFlush() {
   }, 400);
 }
 
+/**
+ * The last write that failed, or null.
+ *
+ * Encrypting happens on a timer, away from whatever the user was doing, so a
+ * failure here has no call stack to surface through. Left unhandled it becomes a
+ * rejected promise nobody sees: the app carries on showing the change, the change
+ * is not on disk, and the next reload quietly loses it. Recording it is what lets
+ * the interface say so.
+ */
+let lastWriteError: string | null = null;
+
+export function getWriteError() {
+  return lastWriteError;
+}
+
 export async function flushNow() {
   if (!memory || !dek || !envelope) return;
 
-  const plaintext = JSON.stringify(Object.fromEntries(memory));
-  const next = await sealVault(envelope, dek, plaintext);
-  envelope = next;
-  window.localStorage.setItem(VAULT_KEY, JSON.stringify(next));
+  try {
+    const plaintext = JSON.stringify(Object.fromEntries(memory));
+    const next = await sealVault(envelope, dek, plaintext);
+
+    // Write before adopting: if the write fails, the envelope in memory must still
+    // match what is on disk, or the next flush encrypts against the wrong one.
+    window.localStorage.setItem(VAULT_KEY, JSON.stringify(next));
+    envelope = next;
+
+    if (lastWriteError) {
+      lastWriteError = null;
+      notify();
+    }
+  } catch (error) {
+    const quota =
+      error instanceof DOMException &&
+      (error.name === 'QuotaExceededError' ||
+        error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+        error.code === 22);
+
+    lastWriteError = quota
+      ? 'Your last change could not be saved: this browser is out of storage. Export a backup, then remove a large receipt or some old transactions.'
+      : 'Your last change could not be saved to this browser. Export a backup before closing this tab.';
+
+    notify();
+  }
 }
 
 function hydrate(plaintext: string) {

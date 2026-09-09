@@ -10,8 +10,18 @@ roadmap; this file is the engineering backlog behind it.
 recovery code as the only other way in. See `docs/SECURITY.md`. This also removes the
 "anyone at your unlocked laptop reads your books" exposure.
 
-**Tests exist now**, but only for the crypto (`lib/crypto.test.ts`, `npm test`). The
-tax chain, the backup merge and the bank parser are still uncovered — see below.
+**Tests cover the crypto and the money arithmetic** — 26 in `lib/crypto.test.ts` and
+`lib/finance.test.ts` (`npm test`). The tax chain, the backup merge and the CSV
+parser itself are still uncovered.
+
+**Figures reconcile against the bank.** The finance page checks opening balance plus
+everything that moved against the closing balance the bank printed. It caught two
+real faults on its first run; a mismatch there means something is counted twice or
+missed, whatever the categories say.
+
+**Every user-facing message goes through the dictionary**, and every confirmation
+uses one dialog. Both were previously scattered — English string literals in pages,
+and `window.confirm` in five places.
 
 ## Blocking a hosted launch
 
@@ -30,12 +40,12 @@ ciphertext — the server should not be able to read what it stores.
 
 ## Correctness
 
-**Most logic is still untested.** The crypto is covered; the VAT quarter maths, the
-ZZP tax chain, the backup merge dedupe, the bank parser and the money helpers are not.
-They were verified by driving a browser, which does not survive a refactor. `lib/tax.ts`,
-`lib/backup.ts`, `lib/bank.ts` and `lib/billing.ts` are pure and the harness now exists,
-so each is a short file away. Two real bugs of exactly this class have already shipped
-and been caught by hand:
+**The tax chain and the parser are still untested.** `lib/finance.ts` and
+`lib/crypto.ts` are covered; the VAT quarter maths, the ZZP tax chain, the backup merge
+dedupe and the CSV parsing are not. They were verified by driving a browser, which does
+not survive a refactor. `lib/tax.ts`, `lib/backup.ts` and `lib/bank.ts` are pure and the
+harness exists, so each is a short file away. Several real bugs of exactly this class
+have shipped and been caught by hand:
 - the storage layer reported a save that never reached disk
 - a filing deadline rendered a day early because a local date was converted to UTC
 
@@ -92,6 +102,11 @@ slots in without changing the data model.
 
 - `public/seed/backfill.json` is a one-time local backfill, gitignored, holding
   real bookkeeping data. It must never be committed.
+- **Browser storage is finite.** Everything lives in one origin's `localStorage`,
+  capped at roughly 5MB, and encryption adds about a third on top through base64. A
+  failed write is now surfaced rather than swallowed, but the ceiling is real: a few
+  years of transactions plus receipts will reach it. Moving receipts to IndexedDB is
+  the obvious next step.
 - **Dev-server gotcha:** the Next dev server repeatedly served a stale
   `globals.css` chunk, so newly added CSS silently did not apply and a fixed
   hydration warning appeared to persist. `rm -rf .next/dev` and restart. This has

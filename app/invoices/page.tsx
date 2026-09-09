@@ -485,7 +485,7 @@ export default function InvoicesPage() {
     try {
       setStoredInvoices(storedInvoices.filter((item) => item.id !== invoice.id));
       setError('');
-      setNotice(`Deleted invoice ${invoice.invoiceNumber}.`);
+      setNotice(t('msg.invoiceDeleted', { number: invoice.invoiceNumber }));
 
       if (loadedInvoiceId === invoice.id) {
         setLoadedInvoiceId(null);
@@ -566,22 +566,22 @@ export default function InvoicesPage() {
       !hours ||
       !rate
     ) {
-      setError('Please fill in invoice number, invoice date, period, description, hours, and rate.');
+      setError(t('msg.fillInvoice'));
       return;
     }
 
     if (!isBusinessProfileComplete(businessProfile)) {
-      setError('Please complete your business profile first.');
+      setError(t('msg.completeProfile'));
       return;
     }
 
     if (!selectedClientProfile) {
-      setError('Please select a saved client profile.');
+      setError(t('msg.selectClient'));
       return;
     }
 
     if (invoiceDate < minDate || invoiceDate > maxFutureDate) {
-      setError('Invoice date must be within the last 1 year and up to 1 year in the future.');
+      setError(t('msg.invoiceDateRange'));
       return;
     }
 
@@ -589,12 +589,12 @@ export default function InvoicesPage() {
     const parsedRate = Number(rate);
 
     if (Number.isNaN(parsedHours) || parsedHours <= 0) {
-      setError('Hours must be greater than 0.');
+      setError(t('msg.hoursPositive'));
       return;
     }
 
     if (Number.isNaN(parsedRate) || parsedRate <= 0) {
-      setError('Rate must be greater than 0.');
+      setError(t('msg.ratePositive'));
       return;
     }
 
@@ -602,7 +602,7 @@ export default function InvoicesPage() {
       vatSelection === 'custom' &&
       (customVatRate === '' || Number(customVatRate) < 0)
     ) {
-      setError('Please enter a valid custom VAT %.');
+      setError(t('msg.customVatInvalid'));
       return;
     }
 
