@@ -387,6 +387,50 @@ export const STRINGS = {
     nl: '{amount} kwam hier binnen vanaf een eigen rekening in {count} overboeking(en). Het staat er omdat het geld wél binnenkwam, en telt niet mee als inkomsten omdat je het niet twee keer hebt verdiend.',
   },
 
+  'acs.title': { en: '{count} accounts imported', nl: '{count} rekeningen geïmporteerd' },
+  'acs.info': {
+    en: 'Each imported statement gets its own colour. Switch an account to transfers-only if it just moves money between accounts you own — money going there is not spending, and money coming from it is not income.',
+    nl: 'Elk geïmporteerd afschrift krijgt een eigen kleur. Zet een rekening op alleen-overboekingen als die alleen geld tussen je eigen rekeningen verplaatst — geld daarheen is geen uitgave, en geld vandaan is geen inkomen.',
+  },
+  'acs.rows': { en: '{count} transaction(s)', nl: '{count} transactie(s)' },
+  'acs.balance': { en: 'balance {amount}', nl: 'saldo {amount}' },
+  'acs.transfersOnly': { en: 'Transfers only', nl: 'Alleen overboekingen' },
+  'fin.movedNotEarned': { en: 'moved, not earned', nl: 'verplaatst, niet verdiend' },
+
+  // Every figure on the page explains the rule behind it.
+  'info.totalOut': {
+    en: 'Everything that left and was actually spent, over the period covered by your import. Money moved between your own accounts, credit-card repayments and investments are excluded — those are not costs.',
+    nl: 'Alles wat wegging en daadwerkelijk is uitgegeven, over de periode van je import. Geld tussen eigen rekeningen, creditcard-aflossingen en beleggingen tellen niet mee — dat zijn geen kosten.',
+  },
+  'info.fixed': {
+    en: 'Costs collected from you on a schedule — rent or mortgage, energy, insurance, phone, and anything direct-debited in most months. A gym counts even though it sits under sport, because you cannot skip it this month.',
+    nl: 'Kosten die volgens een vast ritme worden geïncasseerd — huur of hypotheek, energie, verzekering, telefoon, en alles wat in de meeste maanden automatisch wordt afgeschreven. Een sportabonnement telt mee, ook al valt het onder sport, omdat je het deze maand niet kunt overslaan.',
+  },
+  'info.flexible': {
+    en: 'Everything you decide on each time: groceries, eating out, travel, shopping. This is the part you can actually change month to month.',
+    nl: 'Alles waar je elke keer opnieuw over beslist: boodschappen, uit eten, reizen, winkelen. Dit is het deel dat je maand op maand echt kunt bijsturen.',
+  },
+  'info.projection': {
+    en: 'The year at the pace set so far. Totals are scaled by the days your import covers, not by months, so a statement ending mid-month does not drag the forecast down. The dashed part has not happened.',
+    nl: 'Het jaar in het tempo tot nu toe. Totalen worden geschaald op de dagen die je import beslaat, niet op maanden, zodat een afschrift dat midden in de maand eindigt de prognose niet omlaag trekt. Het gestippelde deel is nog niet gebeurd.',
+  },
+  'info.incoming': {
+    en: 'Money that arrived, grouped by who sent it. Anything transferred from your own accounts is listed greyed out and left out of the total — it arrived, but you did not earn it twice.',
+    nl: 'Geld dat binnenkwam, gegroepeerd per afzender. Overboekingen van je eigen rekeningen staan grijs weergegeven en tellen niet mee — het kwam binnen, maar je hebt het niet twee keer verdiend.',
+  },
+  'info.breakdown': {
+    en: 'Spending by category, longest bar first. Blue is a fixed commitment, green is spending you choose. Click any bar to see the transactions behind it.',
+    nl: 'Uitgaven per categorie, langste balk eerst. Blauw is een vaste last, groen is wat je zelf kiest. Klik op een balk om de onderliggende transacties te zien.',
+  },
+  'info.tidy': {
+    en: 'Merchants no rule recognised — usually local shops. Assign one and every transaction from it is filed, now and on future imports.',
+    nl: 'Winkeliers die geen regel herkende — meestal lokale zaken. Wijs er één toe en al zijn transacties worden gerubriceerd, nu en bij toekomstige imports.',
+  },
+  'info.import': {
+    en: 'A CSV export from your bank. It is read here in your browser and never uploaded. Re-importing the same period updates rows instead of duplicating them, and never overwrites a category you set by hand.',
+    nl: 'Een CSV-export van je bank. Die wordt hier in je browser gelezen en nooit geüpload. Dezelfde periode opnieuw importeren werkt rijen bij in plaats van ze te verdubbelen, en overschrijft nooit een categorie die je zelf hebt ingesteld.',
+  },
+
   'fin.incoming': { en: 'Where the money comes from', nl: 'Waar het geld vandaan komt' },
   'fin.incomingHint': {
     en: 'Money in, by payer. Transfers between your own accounts are left out.',

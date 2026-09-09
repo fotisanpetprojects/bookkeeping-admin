@@ -106,6 +106,8 @@ export type IncomeSource = {
   total: number;
   count: number;
   share: number;
+  /** Moved from another of your accounts — listed, never counted as earnings. */
+  internal: boolean;
 };
 
 export type FinanceSummary = {
@@ -161,16 +163,32 @@ export function availableAccounts(transactions: BankTransaction[]) {
  * Without this, an incoming transfer from your own business account counts as income
  * on top of the revenue that funded it, and a year looks far better than it was.
  */
-export function markInternalTransfers(transactions: BankTransaction[]) {
-  const mine = new Set(transactions.map((t) => normaliseAccount(t.account)).filter(Boolean));
-  if (mine.size < 2) return transactions;
+export function markInternalTransfers(
+  transactions: BankTransaction[],
+  /** Accounts the user has switched to transfers-only, imported or not. */
+  declaredInternal: Set<string> = new Set()
+) {
+  const imported = new Set(transactions.map((t) => normaliseAccount(t.account)).filter(Boolean));
+
+  // Two imported accounts imply transfers between them; one declared account is
+  // enough on its own, since the user has said so outright.
+  const mine = new Set([...imported, ...declaredInternal]);
+  if (imported.size < 2 && declaredInternal.size === 0) return transactions;
 
   return transactions.map((transaction) => {
     if (transaction.manualCategory) return transaction;
+
     // Normalised on both sides, and tolerant of rows imported before the field
     // existed — those simply have no counterparty and stay as they are.
     const other = normaliseAccount(transaction.counterparty);
-    if (!other || !mine.has(other)) return transaction;
+    const here = normaliseAccount(transaction.account);
+
+    // Either end being one of yours makes it a move rather than a cost: money into
+    // a transfers-only account is money you still have.
+    const isInternal =
+      (Boolean(other) && mine.has(other)) || declaredInternal.has(here);
+
+    if (!isInternal) return transaction;
 
     return { ...transaction, category: 'transfers' as CategoryId, internalTransfer: true };
   });
@@ -253,13 +271,35 @@ export function summarise(transactions: BankTransaction[], year: number): Financ
     }))
     .sort((a, b) => b.total - a.total);
 
-  // Where the money comes from, grouped by payer.
-  const sources = new Map<string, { label: string; total: number; count: number }>();
-  for (const transaction of incomeTransactions) {
+  /*
+   * Where the money comes from, grouped by payer.
+   *
+   * Money arriving from your own accounts is listed too, marked internal. Leaving it
+   * out entirely would be its own kind of lie: the money did arrive, and a month
+   * where ten thousand landed should not look empty. It is shown and not counted,
+   * which is the only version that is true on both sides.
+   */
+  const sources = new Map<
+    string,
+    { label: string; total: number; count: number; internal: boolean }
+  >();
+
+  for (const transaction of inYear) {
+    if (transaction.amount <= 0) continue;
+
+    const internal = Boolean(transaction.internalTransfer);
+    if (!internal && transaction.category === 'transfers') continue;
+
     const key = merchantKey(transaction.description);
-    const current = sources.get(key) ?? { label: transaction.description, total: 0, count: 0 };
+    const current = sources.get(key) ?? {
+      label: transaction.description,
+      total: 0,
+      count: 0,
+      internal,
+    };
     current.total += transaction.amount;
     current.count += 1;
+    current.internal = current.internal && internal;
     sources.set(key, current);
   }
 
@@ -269,9 +309,15 @@ export function summarise(transactions: BankTransaction[], year: number): Financ
       label: value.label,
       total: value.total,
       count: value.count,
-      share: moneyIn > 0 ? value.total / moneyIn : 0,
+      internal: value.internal,
+      // Share is of real income, so an internal line has none to claim.
+      share: !value.internal && moneyIn > 0 ? value.total / moneyIn : 0,
     }))
-    .sort((a, b) => b.total - a.total);
+    .sort((a, b) => {
+      // Real income first; moved money sits underneath it.
+      if (a.internal !== b.internal) return a.internal ? 1 : -1;
+      return b.total - a.total;
+    });
 
   const monthsWithData = lastMonthWithData + 1;
 

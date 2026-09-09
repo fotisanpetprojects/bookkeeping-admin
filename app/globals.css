@@ -261,7 +261,8 @@ select.field {
  * A caveat that matters but must not take vertical space, since it sits in one of
  * two side-by-side panels and any block here makes them different heights.
  */
-.warn-mark {
+.warn-mark,
+.info-mark {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -275,8 +276,22 @@ select.field {
   font-size: 0.72rem;
   font-weight: 700;
   cursor: help;
+  flex: 0 0 auto;
 }
-.warn-mark::after {
+
+/* The explaining kind recedes; only the warning kind should catch the eye. */
+.info-mark {
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--ink-3);
+  font-weight: 600;
+  font-style: italic;
+}
+.info-mark:hover,
+.info-mark:focus-visible { color: var(--ink); border-color: var(--ink-3); }
+
+.warn-mark::after,
+.info-mark::after {
   content: attr(data-tip);
   position: absolute;
   top: calc(100% + 0.5rem);
@@ -301,7 +316,13 @@ select.field {
   transition: opacity 120ms ease;
 }
 .warn-mark:hover::after,
-.warn-mark:focus-visible::after { opacity: 1; visibility: visible; }
+.warn-mark:focus-visible::after,
+.info-mark:hover::after,
+.info-mark:focus-visible::after { opacity: 1; visibility: visible; }
+
+/* Moved money: present in the list, plainly not counted. */
+.category-row.is-internal { opacity: 0.55; }
+.category-row.is-internal:hover { opacity: 0.8; }
 
 /* Tabs scroll sideways instead of wrapping, so the header stays one row. */
 .nav-scroll {

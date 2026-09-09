@@ -146,6 +146,49 @@ test('rows imported before accounts existed do not break anything', () => {
   assert.equal(summary.spending, 30);
 });
 
+test('an account switched to transfers-only needs no second statement', () => {
+  // A savings pot at another bank: never imported, so there is nothing to match
+  // against. Saying it is yours is the only signal available.
+  const savings = 'NL44SAVE0000000044';
+  const rows = [
+    tx({ date: '2026-01-10', amount: -2_000, account: PERSONAL, counterparty: savings, code: 'GT' }),
+    tx({ date: '2026-01-20', amount: 500, account: PERSONAL, counterparty: savings, code: 'GT', category: 'income' }),
+    tx({ date: '2026-01-25', amount: -40, account: PERSONAL, category: 'groceries' }),
+  ];
+
+  // Untouched while the app has not been told.
+  const untold = summarise(markInternalTransfers(rows), 2026);
+  assert.equal(untold.spending, 2_040, 'the transfer out still counts as spending');
+  assert.equal(untold.moneyIn, 500, 'and the money back still counts as income');
+
+  const told = summarise(markInternalTransfers(rows, new Set([savings])), 2026);
+  assert.equal(told.spending, 40, 'only the groceries are spending');
+  assert.equal(told.moneyIn, 0, 'money back from your own savings is not income');
+  assert.equal(told.internalOut, 2_000);
+  assert.equal(told.internalIn, 500);
+});
+
+test('money moved in is listed as a source but claims no share of income', () => {
+  const rows = markInternalTransfers([
+    tx({ date: '2026-01-05', amount: 4_000, account: PERSONAL, counterparty: 'NL99CLIE0000000009', category: 'income', description: 'A client' }),
+    tx({ date: '2026-01-13', amount: 1_000, account: PERSONAL, counterparty: BUSINESS, code: 'GT', category: 'income', description: 'From my company' }),
+    tx({ date: '2026-01-12', amount: -1_000, account: BUSINESS, counterparty: PERSONAL, code: 'GT' }),
+  ]);
+
+  const summary = summarise(rows, 2026);
+  const moved = summary.incomeSources.find((source) => source.internal);
+  const earned = summary.incomeSources.find((source) => !source.internal);
+
+  assert.ok(moved, 'the transfer is still listed');
+  assert.equal(moved?.total, 1_000);
+  assert.equal(moved?.share, 0, 'but claims no share of income');
+  assert.equal(earned?.share, 1, 'the real payment is all of it');
+  assert.equal(summary.moneyIn, 4_000);
+
+  // Real income sorts above moved money.
+  assert.equal(summary.incomeSources[0].internal, false);
+});
+
 test('the year is projected on days covered, not months seen', () => {
   // A statement ending on 4 January: one twelfth of a month, not one month.
   const rows = [tx({ date: '2026-01-04', amount: -100, category: 'groceries' })];

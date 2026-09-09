@@ -14,10 +14,14 @@ import {
   ACCOUNT_LABELS_KEY,
   AccountLabel,
   displayAccount,
+  internalAccounts,
   kindOf,
+  labelFor,
   transactionsForKind,
 } from '@/lib/accounts';
 import { normaliseAccount } from '@/lib/bank';
+import AccountStrip from '@/app/components/AccountStrip';
+import InfoMark from '@/app/components/InfoMark';
 import {
   availableAccounts,
   availableYears,
@@ -36,18 +40,23 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 /** Enough to work through in one sitting; the rest is behind the arrow. */
 const SHOWN_UNKNOWNS = 8;
 
-function Stat({ label, value, sub, tone, onOpen }: {
+function Stat({ label, value, sub, tone, onOpen, info }: {
   label: string;
   value: string;
   sub?: string;
   tone?: 'good' | 'bad';
   onOpen?: () => void;
+  /** What this figure counts, and what it deliberately leaves out. */
+  info?: string;
 }) {
   const color = tone === 'good' ? 'var(--good)' : tone === 'bad' ? 'var(--bad)' : 'var(--ink)';
 
   const body = (
     <>
-      <div className="text-sm muted">{label}</div>
+      <div className="flex items-center gap-2 text-sm muted">
+        {label}
+        {info && <InfoMark text={info} />}
+      </div>
       <div className="mt-1 text-2xl font-semibold tabular-nums" style={{ color }}>
         {value}
       </div>
@@ -89,7 +98,7 @@ export default function FinancePage() {
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [labels] = useLocalStorageState<AccountLabel[]>(ACCOUNT_LABELS_KEY, []);
+  const [labels, setLabels] = useLocalStorageState<AccountLabel[]>(ACCOUNT_LABELS_KEY, []);
   const years = useMemo(() => availableYears(transactions), [transactions]);
   const accounts = useMemo(() => availableAccounts(transactions), [transactions]);
   const hasBusiness = useMemo(
@@ -104,7 +113,7 @@ export default function FinancePage() {
    * because the other side had been filtered away.
    */
   const scoped = useMemo(() => {
-    const marked = markInternalTransfers(transactions);
+    const marked = markInternalTransfers(transactions, internalAccounts(labels));
 
     if (account === 'all') return marked;
     if (account === 'personal' || account === 'business') {
@@ -184,6 +193,19 @@ export default function FinancePage() {
     setBulkCategory('');
   };
 
+  const setInternalOnly = (account: string, internalOnly: boolean) => {
+    const key = normaliseAccount(account);
+    const existing = labels.find((label) => normaliseAccount(label.account) === key);
+
+    setLabels(
+      existing
+        ? labels.map((label) =>
+            normaliseAccount(label.account) === key ? { ...label, internalOnly } : label
+          )
+        : [...labels, { ...labelFor(labels, key), internalOnly }]
+    );
+  };
+
   const deleteIds = (ids: string[]) => {
     const doomed = new Set(ids);
     setTransactions(transactions.filter((transaction) => !doomed.has(transaction.id)));
@@ -257,7 +279,10 @@ export default function FinancePage() {
       </header>
 
       <section className="card p-6">
-        <h2 className="text-lg font-semibold">{t('fin.import')}</h2>
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          {t('fin.import')}
+          <InfoMark text={t('info.import')} />
+        </h2>
         <p className="mt-1 max-w-2xl text-sm muted">{t('fin.importHint')}</p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -280,9 +305,17 @@ export default function FinancePage() {
         <section className="card p-10 text-center muted">{t('fin.noData')}</section>
       ) : (
         <>
+          <AccountStrip
+            transactions={transactions}
+            labels={labels}
+            onToggleInternal={setInternalOnly}
+            year={activeYear}
+          />
+
           <section className="grid gap-4 md:grid-cols-3">
             <Stat
               label={t('fin.totalOut')}
+              info={t('info.totalOut')}
               value={formatCurrency(summary.spending)}
               sub={
                 summary.internalCount > 0
@@ -305,6 +338,7 @@ export default function FinancePage() {
 
             <Stat
               label={t('fin.fixed')}
+              info={t('info.fixed')}
               value={formatCurrency(summary.fixedSpend)}
               sub={t('fin.perMonth', {
                 amount: formatCurrency(
@@ -325,6 +359,7 @@ export default function FinancePage() {
 
             <Stat
               label={t('fin.flexible')}
+              info={t('info.flexible')}
               value={formatCurrency(summary.discretionarySpend)}
               sub={t('fin.perMonth', {
                 amount: formatCurrency(
@@ -345,7 +380,10 @@ export default function FinancePage() {
           </section>
 
           <section className="card p-6">
-            <h2 className="text-lg font-semibold">{t('fin.projection')}</h2>
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              {t('fin.projection')}
+              <InfoMark text={t('info.projection')} />
+            </h2>
             <p className="mt-1 text-sm muted">
               {t('fin.coverage', { days: summary.daysCovered, year: activeYear })}
             </p>
@@ -382,7 +420,10 @@ export default function FinancePage() {
           {/* In and out side by side: the two halves of the same question. */}
           <section className="grid gap-4 xl:grid-cols-2">
             <div className="card p-6">
-              <h2 className="text-lg font-semibold">{t('fin.incoming')}</h2>
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                {t('fin.incoming')}
+                <InfoMark text={t('info.incoming')} />
+              </h2>
               <p className="mt-1 text-sm muted">{t('fin.incomingHint')}</p>
 
               <div className="mt-5">
@@ -409,6 +450,9 @@ export default function FinancePage() {
                       share: source.share,
                       count: source.count,
                       fixed: false,
+                      internal: source.internal,
+                      // A percentage of income would be a lie for money you moved.
+                      note: source.internal ? t('fin.movedNotEarned') : undefined,
                     }))}
                   />
                 )}
@@ -471,7 +515,10 @@ export default function FinancePage() {
           </section>
 
           <section className="card p-6">
-            <h2 className="text-lg font-semibold">{t('fin.tidy')}</h2>
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              {t('fin.tidy')}
+              <InfoMark text={t('info.tidy')} />
+            </h2>
             <p className="mt-1 max-w-3xl text-sm muted">{t('fin.tidyHint')}</p>
 
             {unknowns.length > 0 && (
