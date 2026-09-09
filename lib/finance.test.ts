@@ -146,6 +146,30 @@ test('rows imported before accounts existed do not break anything', () => {
   assert.equal(summary.spending, 30);
 });
 
+test('re-importing over rows stored before accounts existed upgrades them, not duplicates', () => {
+  // The pre-account id shape: no account segment at the front.
+  const stored: BankTransaction = {
+    ...tx({ date: '2026-01-05', amount: -30, description: 'LIDL 507', category: 'groceries' }),
+    id: '2026-01-05|-30.00|LIDL 507|100.00',
+    account: undefined as unknown as string,
+    counterparty: undefined as unknown as string,
+    manualCategory: true,
+  };
+
+  const reimported: BankTransaction = {
+    ...tx({ date: '2026-01-05', amount: -30, description: 'LIDL 507', account: PERSONAL, counterparty: '' }),
+    id: `${PERSONAL}|2026-01-05|-30.00|LIDL 507|100.00`,
+    category: 'unknown',
+  };
+
+  const { merged, added } = mergeTransactions([stored], [reimported]);
+
+  assert.equal(added, 0, 'the same payment must not be added a second time');
+  assert.equal(merged.length, 1, 'and must not be stored twice');
+  assert.equal(merged[0].account, PERSONAL, 'the row gains its account');
+  assert.equal(merged[0].category, 'groceries', 'while keeping the hand-set category');
+});
+
 test('an account switched to transfers-only needs no second statement', () => {
   // A savings pot at another bank: never imported, so there is nothing to match
   // against. Saying it is yours is the only signal available.

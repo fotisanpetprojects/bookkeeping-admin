@@ -275,31 +275,43 @@ export default function FinancePage() {
             ))}
           </select>
         )}
+
+        {/*
+          Importing is something you do a few times a year, so it does not deserve a
+          panel at the top of a page you read every week. The real input stays in the
+          DOM for the file dialog and is opened by this button.
+        */}
+        <button
+          className="btn btn-icon"
+          title={t('fin.import')}
+          aria-label={t('fin.import')}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden>
+            <path
+              d="M10 13.5V3.5m0 0L6.5 7M10 3.5L13.5 7M4 14.5v1a1.5 1.5 0 001.5 1.5h9a1.5 1.5 0 001.5-1.5v-1"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+
+        <InfoMark text={t('info.import')} />
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          onChange={handleFile}
+          className="hidden"
+        />
         </div>
       </header>
 
-      <section className="card p-6">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          {t('fin.import')}
-          <InfoMark text={t('info.import')} />
-        </h2>
-        <p className="mt-1 max-w-2xl text-sm muted">{t('fin.importHint')}</p>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,text/csv"
-            onChange={handleFile}
-            className="field max-w-md file:mr-3 file:rounded-[7px] file:border-0 file:bg-[var(--surface-sunken)] file:px-3 file:py-1.5 file:text-sm file:font-medium"
-          />
-        </div>
-
-        {error && <div className="mt-4 panel p-3 text-sm text-[var(--bad)]">{error}</div>}
-        {notice && !error && (
-          <div className="mt-4 panel p-3 text-sm text-[var(--good)]">{notice}</div>
-        )}
-      </section>
+      {error && <div className="panel p-3 text-sm text-[var(--bad)]">{error}</div>}
+      {notice && !error && <div className="panel p-3 text-sm text-[var(--good)]">{notice}</div>}
 
       {!hasData ? (
         <section className="card p-10 text-center muted">{t('fin.noData')}</section>

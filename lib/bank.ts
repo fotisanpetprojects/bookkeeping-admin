@@ -270,12 +270,36 @@ export function parseBankCsv(text: string): ParseResult {
  * Adds new transactions to what is stored. A row already present keeps the
  * category it has, so re-importing never undoes a correction made by hand.
  */
+/**
+ * The identity a transaction had before ids carried the account number.
+ *
+ * Rows imported by an earlier version are keyed without it, so the same payment
+ * re-imported today produces a different id and would be stored a second time. This
+ * recognises the older key so a re-import upgrades those rows instead of doubling
+ * every figure on the page.
+ */
+function legacyId(id: string) {
+  const parts = id.split('|');
+  return parts.length > 4 ? parts.slice(1).join('|') : id;
+}
+
 export function mergeTransactions(existing: BankTransaction[], incoming: BankTransaction[]) {
   const byId = new Map(existing.map((transaction) => [transaction.id, transaction]));
   let added = 0;
 
   for (const transaction of incoming) {
-    const current = byId.get(transaction.id);
+    let current = byId.get(transaction.id);
+
+    if (!current) {
+      // Same payment, stored under the pre-account key.
+      const older = legacyId(transaction.id);
+      const legacy = older === transaction.id ? undefined : byId.get(older);
+
+      if (legacy) {
+        byId.delete(older);
+        current = legacy;
+      }
+    }
 
     if (!current) {
       byId.set(transaction.id, transaction);

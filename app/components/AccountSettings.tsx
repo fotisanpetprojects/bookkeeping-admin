@@ -8,8 +8,21 @@ import { ACCOUNT_LABELS_KEY, AccountKind, AccountLabel, labelFor } from '@/lib/a
 
 export default function AccountSettings() {
   const { t } = useT();
-  const [transactions] = useLocalStorageState<BankTransaction[]>('bank-transactions', []);
+  const [transactions, setTransactions] = useLocalStorageState<BankTransaction[]>(
+    'bank-transactions',
+    []
+  );
   const [labels, setLabels] = useLocalStorageState<AccountLabel[]>(ACCOUNT_LABELS_KEY, []);
+
+  /**
+   * Discards every imported transaction. It lives here rather than on the finance
+   * page because it is a once-a-year action next to an everyday one, and nobody
+   * should be able to wipe a year's import while glancing at their spending.
+   */
+  const clearAll = () => {
+    if (!window.confirm(t('acc.clearConfirm', { count: transactions.length }))) return;
+    setTransactions([]);
+  };
 
   const accounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -38,6 +51,15 @@ export default function AccountSettings() {
     <section className="card p-6">
       <h2 className="text-lg font-semibold">{t('acc.title')}</h2>
       <p className="mt-1 max-w-3xl text-sm muted">{t('acc.body')}</p>
+
+      {transactions.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button className="btn btn-danger" onClick={clearAll}>
+            {t('acc.clearAll')}
+          </button>
+          <span className="text-xs faint">{t('acc.clearHint')}</span>
+        </div>
+      )}
 
       {accounts.length === 0 ? (
         <p className="mt-5 text-sm faint">{t('acc.none')}</p>

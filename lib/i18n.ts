@@ -240,8 +240,8 @@ export const STRINGS = {
     nl: '{added} nieuwe transactie(s) geïmporteerd van {from} tot {to}. {duplicates} al aanwezig.',
   },
   'fin.noData': {
-    en: 'No transactions yet. Import a CSV export from your bank to see where your money goes.',
-    nl: 'Nog geen transacties. Importeer een CSV-export van je bank om te zien waar je geld heen gaat.',
+    en: 'No transactions yet. Use the upload button above to import a CSV export from your bank — it is read here in your browser and never uploaded anywhere.',
+    nl: 'Nog geen transacties. Gebruik de uploadknop hierboven om een CSV-export van je bank te importeren — die wordt hier in je browser gelezen en nergens naartoe gestuurd.',
   },
   'fin.moneyIn': { en: 'Money in', nl: 'Inkomend' },
   'fin.spending': { en: 'Spending', nl: 'Uitgaven' },
@@ -385,6 +385,16 @@ export const STRINGS = {
   'fin.internalHint': {
     en: '{amount} arrived here from another account of yours across {count} transfer(s). It is shown because the money did arrive, and left out of income because you did not earn it twice.',
     nl: '{amount} kwam hier binnen vanaf een eigen rekening in {count} overboeking(en). Het staat er omdat het geld wél binnenkwam, en telt niet mee als inkomsten omdat je het niet twee keer hebt verdiend.',
+  },
+
+  'acc.clearAll': { en: 'Delete all imported transactions', nl: 'Alle geïmporteerde transacties verwijderen' },
+  'acc.clearHint': {
+    en: 'Start over with a clean import. Your invoices, expenses and profiles are untouched.',
+    nl: 'Begin opnieuw met een schone import. Je facturen, uitgaven en profielen blijven ongemoeid.',
+  },
+  'acc.clearConfirm': {
+    en: 'Delete all {count} imported transactions, including any categories you set by hand? Your invoices and expenses are not affected.',
+    nl: 'Alle {count} geïmporteerde transacties verwijderen, inclusief categorieën die je zelf hebt ingesteld? Je facturen en uitgaven blijven ongemoeid.',
   },
 
   'acs.title': { en: '{count} accounts imported', nl: '{count} rekeningen geïmporteerd' },
