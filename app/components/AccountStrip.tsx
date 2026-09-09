@@ -91,6 +91,8 @@ export default function AccountStrip({
               <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap text-xs muted">
                 <input
                   type="checkbox"
+                  role="switch"
+                  className="switch"
                   checked={Boolean(label.internalOnly)}
                   onChange={(event) => onToggleInternal(account, event.target.checked)}
                 />

@@ -5,9 +5,11 @@ import { useT } from '@/lib/i18n';
 import { useLocalStorageState } from '@/lib/local-storage';
 import { BankTransaction, normaliseAccount } from '@/lib/bank';
 import { ACCOUNT_LABELS_KEY, AccountKind, AccountLabel, labelFor } from '@/lib/accounts';
+import { useConfirm } from '@/app/components/Confirm';
 
 export default function AccountSettings() {
   const { t } = useT();
+  const confirm = useConfirm();
   const [transactions, setTransactions] = useLocalStorageState<BankTransaction[]>(
     'bank-transactions',
     []
@@ -19,9 +21,14 @@ export default function AccountSettings() {
    * page because it is a once-a-year action next to an everyday one, and nobody
    * should be able to wipe a year's import while glancing at their spending.
    */
-  const clearAll = () => {
-    if (!window.confirm(t('acc.clearConfirm', { count: transactions.length }))) return;
-    setTransactions([]);
+  const clearAll = async () => {
+    const { confirmed } = await confirm({
+      message: t('acc.clearConfirm', { count: transactions.length }),
+      confirmLabel: t('fin.delete'),
+      danger: true,
+    });
+
+    if (confirmed) setTransactions([]);
   };
 
   const accounts = useMemo(() => {

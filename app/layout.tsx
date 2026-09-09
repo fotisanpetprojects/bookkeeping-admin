@@ -4,6 +4,7 @@ import NavTabs from '@/app/components/NavTabs';
 import ThemeToggle from '@/app/components/ThemeToggle';
 import SeedLoader from '@/app/components/SeedLoader';
 import VaultGate from '@/app/components/VaultGate';
+import ConfirmProvider from '@/app/components/Confirm';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body className="min-h-screen">
         <div className="min-h-screen">
           <SeedLoader />
+          <ConfirmProvider>
           <VaultGate>
           <header className="app-header">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -42,6 +44,7 @@ export default function RootLayout({
 
           <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
           </VaultGate>
+          </ConfirmProvider>
 
           <ThemeToggle className="theme-dock" />
         </div>

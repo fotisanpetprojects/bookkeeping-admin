@@ -3,6 +3,7 @@
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
 import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
 import { useT } from '@/lib/i18n';
+import { useConfirm } from '@/app/components/Confirm';
 import {
   formatCurrency,
   getBackfillMinDateString,
@@ -64,6 +65,7 @@ export default function ExpensesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [yearFilter, setYearFilter] = useState('all');
   const { t } = useT();
+  const confirm = useConfirm();
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -168,12 +170,16 @@ export default function ExpensesPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const deleteExpense = (expense: Expense) => {
-    const confirmed = window.confirm(
-      `Delete the ${formatCurrency(expense.totalAmount)} expense from ${
-        expense.supplier
-      } on ${expense.date}? This cannot be undone.`
-    );
+  const deleteExpense = async (expense: Expense) => {
+    const { confirmed } = await confirm({
+      message: t('exp.deleteConfirm', {
+        amount: formatCurrency(expense.totalAmount),
+        supplier: expense.supplier,
+        date: expense.date,
+      }),
+      confirmLabel: t('fin.delete'),
+      danger: true,
+    });
 
     if (!confirmed) {
       return;

@@ -463,8 +463,9 @@ export default function FinancePage() {
                       count: source.count,
                       fixed: false,
                       internal: source.internal,
-                      // A percentage of income would be a lie for money you moved.
-                      note: source.internal ? t('fin.movedNotEarned') : undefined,
+                      // Greyed is the whole signal; a percentage of income it has no
+                      // share of would just be noise beside it.
+                      note: source.internal ? '' : undefined,
                     }))}
                   />
                 )}

@@ -3,6 +3,7 @@
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
 import { useLocalStorageState } from '@/lib/local-storage';
 import { useT } from '@/lib/i18n';
+import { useConfirm } from '@/app/components/Confirm';
 import { ClientProfile, SavedBusinessProfile, StoredInvoice } from '@/lib/billing';
 import {
   BackupPayload,
@@ -32,6 +33,7 @@ export default function BackupPanel() {
   const [notice, setNotice] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useT();
+  const confirm = useConfirm();
 
   const hasData =
     businessProfiles.length > 0 ||
@@ -83,16 +85,18 @@ export default function BackupPanel() {
     }
   };
 
-  const handleRestore = () => {
+  const handleRestore = async () => {
     if (!pendingBackup) return;
 
     setError('');
     setNotice('');
 
     if (mode === 'replace') {
-      const confirmed = window.confirm(
-        'Replace mode deletes everything currently stored in this browser and puts the backup in its place. A safety backup of your current data will be downloaded first. Continue?'
-      );
+      const { confirmed } = await confirm({
+        message: t('backup.replaceConfirm'),
+        confirmLabel: t('backup.replaceBtn'),
+        danger: true,
+      });
 
       if (!confirmed) {
         return;

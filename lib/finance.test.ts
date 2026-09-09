@@ -170,6 +170,24 @@ test('re-importing over rows stored before accounts existed upgrades them, not d
   assert.equal(merged[0].category, 'groceries', 'while keeping the hand-set category');
 });
 
+test('marking an account never turns its own payments into transfers', () => {
+  // The reported break: switching the main account to transfers-only made every
+  // payment on it internal — clients, the tax office, the groceries, all of it.
+  const rows = [
+    tx({ date: '2026-01-05', amount: 20_000, account: PERSONAL, counterparty: 'NL99CLIE0000000009', category: 'income', description: 'A client' }),
+    tx({ date: '2026-01-07', amount: 500, account: PERSONAL, counterparty: 'NL55PERS0000000055', category: 'income', description: 'A friend paying me back' }),
+    tx({ date: '2026-01-10', amount: -60, account: PERSONAL, counterparty: '', category: 'groceries' }),
+    tx({ date: '2026-01-13', amount: 3_000, account: PERSONAL, counterparty: BUSINESS, code: 'GT', category: 'income', description: 'From my own company' }),
+  ];
+
+  const summary = summarise(markInternalTransfers(rows, new Set([PERSONAL, BUSINESS])), 2026);
+
+  assert.equal(summary.moneyIn, 20_500, 'the client and the friend are both income');
+  assert.equal(summary.spending, 60, 'the groceries are still spending');
+  assert.equal(summary.internalIn, 3_000, 'only the transfer from your own account is internal');
+  assert.equal(summary.internalCount, 1);
+});
+
 test('an account switched to transfers-only needs no second statement', () => {
   // A savings pot at another bank: never imported, so there is nothing to match
   // against. Saying it is yours is the only signal available.

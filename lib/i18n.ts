@@ -275,6 +275,19 @@ export const STRINGS = {
     en: '{amount} across {count} transaction(s) is still uncategorised, so the split below is incomplete.',
     nl: '{amount} verdeeld over {count} transactie(s) is nog niet gerubriceerd, dus de verdeling hieronder is onvolledig.',
   },
+  'common.confirm': { en: 'Confirm', nl: 'Bevestigen' },
+  'inv.deleteConfirm': {
+    en: 'Delete invoice {number} ({amount})? This cannot be undone.',
+    nl: 'Factuur {number} ({amount}) verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  },
+  'exp.deleteConfirm': {
+    en: 'Delete the {amount} expense from {supplier} on {date}? This cannot be undone.',
+    nl: 'De uitgave van {amount} bij {supplier} op {date} verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  },
+  'backup.replaceConfirm': {
+    en: 'Replace mode deletes everything currently stored in this browser and puts the backup in its place. A safety backup of your current data is downloaded first.',
+    nl: 'Vervangen wist alles wat nu in deze browser staat en zet de back-up ervoor in de plaats. Er wordt eerst een veiligheidsback-up van je huidige gegevens gedownload.',
+  },
   'common.close': { en: 'Close', nl: 'Sluiten' },
   'common.previous': { en: 'Previous', nl: 'Vorige' },
   'common.next': { en: 'Next', nl: 'Volgende' },

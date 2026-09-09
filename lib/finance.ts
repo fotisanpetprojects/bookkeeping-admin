@@ -178,17 +178,19 @@ export function markInternalTransfers(
   return transactions.map((transaction) => {
     if (transaction.manualCategory) return transaction;
 
-    // Normalised on both sides, and tolerant of rows imported before the field
-    // existed — those simply have no counterparty and stay as they are.
+    /*
+     * Only the OTHER end decides this.
+     *
+     * Testing the account a transaction sits on would mean every payment on that
+     * account counted as a transfer — a salary, a client paying you, the weekly
+     * groceries. Being one of your accounts says nothing about any individual
+     * payment on it; being on the far side of one says everything.
+     *
+     * Normalised, and tolerant of rows imported before the field existed — those
+     * have no counterparty and are left exactly as they are.
+     */
     const other = normaliseAccount(transaction.counterparty);
-    const here = normaliseAccount(transaction.account);
-
-    // Either end being one of yours makes it a move rather than a cost: money into
-    // a transfers-only account is money you still have.
-    const isInternal =
-      (Boolean(other) && mine.has(other)) || declaredInternal.has(here);
-
-    if (!isInternal) return transaction;
+    if (!other || !mine.has(other)) return transaction;
 
     return { ...transaction, category: 'transfers' as CategoryId, internalTransfer: true };
   });

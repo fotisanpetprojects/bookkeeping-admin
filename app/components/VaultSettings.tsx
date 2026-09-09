@@ -13,12 +13,14 @@ import {
   vaultExists,
 } from '@/lib/vault';
 import { requestVaultSetup } from '@/app/components/VaultGate';
+import { useConfirm } from '@/app/components/Confirm';
 
 const MIN_PASSPHRASE = 10;
 const AUTO_LOCK_CHOICES = [0, 5, 15, 60];
 
 export default function VaultSettings() {
   const { t } = useT();
+  const confirm = useConfirm();
   const [state, setState] = useState({ exists: false, unlocked: false });
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -72,7 +74,12 @@ export default function VaultSettings() {
   };
 
   const handleRemove = async () => {
-    if (!window.confirm(t('vault.removeConfirm'))) return;
+    const { confirmed } = await confirm({
+      message: t('vault.removeConfirm'),
+      confirmLabel: t('vault.removeAction'),
+      danger: true,
+    });
+    if (!confirmed) return;
 
     setError('');
     try {
