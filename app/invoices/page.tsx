@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { jsPDF } from 'jspdf';
 import InvoiceTable from '@/app/components/InvoiceTable';
 import { useT } from '@/lib/i18n';
+import { useConfirm } from '@/app/components/Confirm';
 import { describeStorageError, useLocalStorageState } from '@/lib/local-storage';
 import {
   BusinessProfile,
@@ -301,6 +302,7 @@ export default function InvoicesPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const { t } = useT();
+  const confirm = useConfirm();
 
   const minDate = getMinDateString();
   const maxFutureDate = getMaxFutureDateString();
@@ -466,12 +468,15 @@ export default function InvoicesPage() {
     setNotice('');
   };
 
-  const deleteInvoice = (invoice: StoredInvoice) => {
-    const confirmed = window.confirm(
-      `Delete invoice ${invoice.invoiceNumber} (${formatCurrency(
-        invoice.totalAmount
-      )})? This cannot be undone.`
-    );
+  const deleteInvoice = async (invoice: StoredInvoice) => {
+    const { confirmed } = await confirm({
+      message: t('inv.deleteConfirm', {
+        number: invoice.invoiceNumber,
+        amount: formatCurrency(invoice.totalAmount),
+      }),
+      confirmLabel: t('fin.delete'),
+      danger: true,
+    });
 
     if (!confirmed) {
       return;

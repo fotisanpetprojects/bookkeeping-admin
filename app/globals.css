@@ -261,7 +261,8 @@ select.field {
  * A caveat that matters but must not take vertical space, since it sits in one of
  * two side-by-side panels and any block here makes them different heights.
  */
-.warn-mark {
+.warn-mark,
+.info-mark {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -275,8 +276,22 @@ select.field {
   font-size: 0.72rem;
   font-weight: 700;
   cursor: help;
+  flex: 0 0 auto;
 }
-.warn-mark::after {
+
+/* The explaining kind recedes; only the warning kind should catch the eye. */
+.info-mark {
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--ink-3);
+  font-weight: 600;
+  font-style: italic;
+}
+.info-mark:hover,
+.info-mark:focus-visible { color: var(--ink); border-color: var(--ink-3); }
+
+.warn-mark::after,
+.info-mark::after {
   content: attr(data-tip);
   position: absolute;
   top: calc(100% + 0.5rem);
@@ -301,7 +316,52 @@ select.field {
   transition: opacity 120ms ease;
 }
 .warn-mark:hover::after,
-.warn-mark:focus-visible::after { opacity: 1; visibility: visible; }
+.warn-mark:focus-visible::after,
+.info-mark:hover::after,
+.info-mark:focus-visible::after { opacity: 1; visibility: visible; }
+
+/*
+ * A switch, for settings that take effect the moment they are flipped. Checkboxes
+ * read as "I will submit this later"; these apply immediately.
+ */
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 2.1rem;
+  height: 1.2rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-sunken);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0.14rem;
+  width: 0.86rem;
+  height: 0.86rem;
+  border-radius: 999px;
+  background: var(--ink-3);
+  transform: translateY(-50%);
+  transition: transform 140ms ease, background 140ms ease;
+}
+.switch:checked {
+  background: var(--accent);
+  border-color: transparent;
+}
+.switch:checked::after {
+  background: #fff;
+  transform: translateY(-50%) translateX(0.86rem);
+}
+.switch:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
+
+/* Moved money: present in the list, plainly not counted. */
+.category-row.is-internal { opacity: 0.55; }
+.category-row.is-internal:hover { opacity: 0.8; }
 
 /* Tabs scroll sideways instead of wrapping, so the header stays one row. */
 .nav-scroll {

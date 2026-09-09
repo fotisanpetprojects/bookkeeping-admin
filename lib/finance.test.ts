@@ -9,7 +9,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { type BankTransaction, mergeTransactions } from './bank.ts';
-import { detectRecurring, isFixedCommitment, markInternalTransfers, summarise } from './finance.ts';
+import {
+  detectRecurring,
+  isFixedCommitment,
+  markInternalTransfers,
+  reconcile,
+  summarise,
+} from './finance.ts';
 
 const BUSINESS = 'NL00BUSI0000000001';
 const PERSONAL = 'NL00PERS0000000002';
@@ -144,6 +150,125 @@ test('rows imported before accounts existed do not break anything', () => {
   const summary = summarise(markInternalTransfers(old), 2026);
   assert.equal(summary.moneyIn, 900);
   assert.equal(summary.spending, 30);
+});
+
+test('re-importing over rows stored before accounts existed upgrades them, not duplicates', () => {
+  // The pre-account id shape: no account segment at the front.
+  const stored: BankTransaction = {
+    ...tx({ date: '2026-01-05', amount: -30, description: 'LIDL 507', category: 'groceries' }),
+    id: '2026-01-05|-30.00|LIDL 507|100.00',
+    account: undefined as unknown as string,
+    counterparty: undefined as unknown as string,
+    manualCategory: true,
+  };
+
+  const reimported: BankTransaction = {
+    ...tx({ date: '2026-01-05', amount: -30, description: 'LIDL 507', account: PERSONAL, counterparty: '' }),
+    id: `${PERSONAL}|2026-01-05|-30.00|LIDL 507|100.00`,
+    category: 'unknown',
+  };
+
+  const { merged, added } = mergeTransactions([stored], [reimported]);
+
+  assert.equal(added, 0, 'the same payment must not be added a second time');
+  assert.equal(merged.length, 1, 'and must not be stored twice');
+  assert.equal(merged[0].account, PERSONAL, 'the row gains its account');
+  assert.equal(merged[0].category, 'groceries', 'while keeping the hand-set category');
+});
+
+test('marking an account never turns its own payments into transfers', () => {
+  // The reported break: switching the main account to transfers-only made every
+  // payment on it internal — clients, the tax office, the groceries, all of it.
+  const rows = [
+    tx({ date: '2026-01-05', amount: 20_000, account: PERSONAL, counterparty: 'NL99CLIE0000000009', category: 'income', description: 'A client' }),
+    tx({ date: '2026-01-07', amount: 500, account: PERSONAL, counterparty: 'NL55PERS0000000055', category: 'income', description: 'A friend paying me back' }),
+    tx({ date: '2026-01-10', amount: -60, account: PERSONAL, counterparty: '', category: 'groceries' }),
+    tx({ date: '2026-01-13', amount: 3_000, account: PERSONAL, counterparty: BUSINESS, code: 'GT', category: 'income', description: 'From my own company' }),
+  ];
+
+  const summary = summarise(markInternalTransfers(rows, new Set([PERSONAL, BUSINESS])), 2026);
+
+  assert.equal(summary.moneyIn, 20_500, 'the client and the friend are both income');
+  assert.equal(summary.spending, 60, 'the groceries are still spending');
+  assert.equal(summary.internalIn, 3_000, 'only the transfer from your own account is internal');
+  assert.equal(summary.internalCount, 1);
+});
+
+test('an account switched to transfers-only needs no second statement', () => {
+  // A savings pot at another bank: never imported, so there is nothing to match
+  // against. Saying it is yours is the only signal available.
+  const savings = 'NL44SAVE0000000044';
+  const rows = [
+    tx({ date: '2026-01-10', amount: -2_000, account: PERSONAL, counterparty: savings, code: 'GT' }),
+    tx({ date: '2026-01-20', amount: 500, account: PERSONAL, counterparty: savings, code: 'GT', category: 'income' }),
+    tx({ date: '2026-01-25', amount: -40, account: PERSONAL, category: 'groceries' }),
+  ];
+
+  // Untouched while the app has not been told.
+  const untold = summarise(markInternalTransfers(rows), 2026);
+  assert.equal(untold.spending, 2_040, 'the transfer out still counts as spending');
+  assert.equal(untold.moneyIn, 500, 'and the money back still counts as income');
+
+  const told = summarise(markInternalTransfers(rows, new Set([savings])), 2026);
+  assert.equal(told.spending, 40, 'only the groceries are spending');
+  assert.equal(told.moneyIn, 0, 'money back from your own savings is not income');
+  assert.equal(told.internalOut, 2_000);
+  assert.equal(told.internalIn, 500);
+});
+
+test('money moved in is listed as a source but claims no share of income', () => {
+  const rows = markInternalTransfers([
+    tx({ date: '2026-01-05', amount: 4_000, account: PERSONAL, counterparty: 'NL99CLIE0000000009', category: 'income', description: 'A client' }),
+    tx({ date: '2026-01-13', amount: 1_000, account: PERSONAL, counterparty: BUSINESS, code: 'GT', category: 'income', description: 'From my company' }),
+    tx({ date: '2026-01-12', amount: -1_000, account: BUSINESS, counterparty: PERSONAL, code: 'GT' }),
+  ]);
+
+  const summary = summarise(rows, 2026);
+  const moved = summary.incomeSources.find((source) => source.internal);
+  const earned = summary.incomeSources.find((source) => !source.internal);
+
+  assert.ok(moved, 'the transfer is still listed');
+  assert.equal(moved?.total, 1_000);
+  assert.equal(moved?.share, 0, 'but claims no share of income');
+  assert.equal(earned?.share, 1, 'the real payment is all of it');
+  assert.equal(summary.moneyIn, 4_000);
+
+  // Real income sorts above moved money.
+  assert.equal(summary.incomeSources[0].internal, false);
+});
+
+test('reconciliation finds the true first and last rows when a day holds several', () => {
+  // Three payments on the same day. Date order cannot say which came last, and
+  // guessing wrong makes the closing balance wrong — which reported a discrepancy
+  // of 14.98 on a real statement that in fact balanced exactly.
+  // A real ledger: 1000.00 opening, each balance the one before plus the amount.
+  // Deliberately shuffled, and the three 09-04 rows are given out of ledger order.
+  const rows = [
+    tx({ date: '2026-09-04', amount: -37.99, balance: 713.26, category: 'sports-hobbies' }),
+    tx({ date: '2026-01-02', amount: -148.75, balance: 851.25, category: 'insurance' }),
+    tx({ date: '2026-09-04', amount: -9.0, balance: 698.26, category: 'eating-out' }),
+    tx({ date: '2026-05-01', amount: -100.0, balance: 751.25, category: 'housing' }),
+    tx({ date: '2026-09-04', amount: -6.0, balance: 707.26, category: 'groceries' }),
+  ];
+
+  const [check] = reconcile(rows, 2026);
+
+  assert.equal(check.openingBalance, 1_000, 'opening is the first row less its own amount');
+  assert.equal(check.closingBalance, 698.26, 'closing is the true last row, not the latest by date');
+  assert.equal(check.bankMovement, check.sumOfRows, 'the bank and the rows agree');
+  assert.ok(check.balances);
+});
+
+test('reconciliation reports a real discrepancy rather than hiding it', () => {
+  // A row missing from the export: the balances jump without a transaction to explain it.
+  const rows = [
+    tx({ date: '2026-01-01', amount: -10, balance: 990, category: 'groceries' }),
+    tx({ date: '2026-01-03', amount: -10, balance: 880, category: 'groceries' }),
+  ];
+
+  const [check] = reconcile(rows, 2026);
+  assert.equal(check.balances, false, 'a gap must be surfaced, not smoothed over');
+  assert.ok(Math.abs(check.difference) > 0);
 });
 
 test('the year is projected on days covered, not months seen', () => {

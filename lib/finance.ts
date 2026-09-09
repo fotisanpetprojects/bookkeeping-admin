@@ -106,6 +106,8 @@ export type IncomeSource = {
   total: number;
   count: number;
   share: number;
+  /** Moved from another of your accounts — listed, never counted as earnings. */
+  internal: boolean;
 };
 
 export type FinanceSummary = {
@@ -161,19 +163,165 @@ export function availableAccounts(transactions: BankTransaction[]) {
  * Without this, an incoming transfer from your own business account counts as income
  * on top of the revenue that funded it, and a year looks far better than it was.
  */
-export function markInternalTransfers(transactions: BankTransaction[]) {
-  const mine = new Set(transactions.map((t) => normaliseAccount(t.account)).filter(Boolean));
-  if (mine.size < 2) return transactions;
+export function markInternalTransfers(
+  transactions: BankTransaction[],
+  /**
+   * The accounts that count as yours for this purpose. When omitted every imported
+   * account counts, which is the sensible default; the caller passes an explicit set
+   * so a switch turned off actually excludes one.
+   */
+  ownAccounts?: Set<string>
+) {
+  const imported = new Set(transactions.map((t) => normaliseAccount(t.account)).filter(Boolean));
+  const mine = ownAccounts ?? imported;
+
+  if (mine.size === 0) return transactions;
 
   return transactions.map((transaction) => {
     if (transaction.manualCategory) return transaction;
-    // Normalised on both sides, and tolerant of rows imported before the field
-    // existed — those simply have no counterparty and stay as they are.
+
+    /*
+     * Only the OTHER end decides this.
+     *
+     * Testing the account a transaction sits on would mean every payment on that
+     * account counted as a transfer — a salary, a client paying you, the weekly
+     * groceries. Being one of your accounts says nothing about any individual
+     * payment on it; being on the far side of one says everything.
+     *
+     * Normalised, and tolerant of rows imported before the field existed — those
+     * have no counterparty and are left exactly as they are.
+     */
     const other = normaliseAccount(transaction.counterparty);
     if (!other || !mine.has(other)) return transaction;
 
     return { ...transaction, category: 'transfers' as CategoryId, internalTransfer: true };
   });
+}
+
+export type Reconciliation = {
+  account: string;
+  openingBalance: number;
+  closingBalance: number;
+  /** What the bank's own running balance says actually happened. */
+  bankMovement: number;
+  /** What every transaction on the account adds up to. */
+  sumOfRows: number;
+  moneyIn: number;
+  spending: number;
+  internal: number;
+  investments: number;
+  transfersOut: number;
+  difference: number;
+  balances: boolean;
+};
+
+/**
+ * Checks the page's arithmetic against the bank's own running balance.
+ *
+ * Every classification here is a judgement — what counts as spending, what is a
+ * transfer, what is investment. The one thing that is not a judgement is the
+ * balance the bank printed on each line. If the rows between two balances do not
+ * add up to the difference between them, something is being counted twice or not
+ * at all, and no amount of confidence in the categories fixes that.
+ *
+ * This is the check that would have caught the transfers bug on its own.
+ */
+export function reconcile(transactions: BankTransaction[], year: number): Reconciliation[] {
+  const byAccount = new Map<string, BankTransaction[]>();
+
+  for (const transaction of transactions) {
+    if (!transaction.date.startsWith(String(year))) continue;
+    if (transaction.balance === null) continue;
+
+    const key = normaliseAccount(transaction.account);
+    byAccount.set(key, [...(byAccount.get(key) ?? []), transaction]);
+  }
+
+  return [...byAccount.entries()].map(([account, rows]) => {
+    const ordered = rows;
+    const { first, last } = ledgerBounds(rows);
+
+    // The balance before the first row is that row's balance minus the row itself.
+    const openingBalance = (first.balance ?? 0) - first.amount;
+    const closingBalance = last.balance ?? 0;
+
+    const bankMovement = closingBalance - openingBalance;
+    const sumOfRows = ordered.reduce((sum, row) => sum + row.amount, 0);
+
+    const spending = ordered.filter(isSpending).reduce((sum, r) => sum + Math.abs(r.amount), 0);
+    const moneyIn = ordered
+      .filter((r) => r.amount > 0 && !r.internalTransfer && r.category !== 'transfers')
+      .reduce((sum, r) => sum + r.amount, 0);
+    const internal = ordered
+      .filter((r) => r.internalTransfer)
+      .reduce((sum, r) => sum + r.amount, 0);
+    const investments = ordered
+      .filter((r) => r.category === 'investments')
+      .reduce((sum, r) => sum + r.amount, 0);
+    const transfersOut = ordered
+      .filter((r) => !r.internalTransfer && r.category === 'transfers')
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    const difference = roundTo(bankMovement - sumOfRows);
+
+    return {
+      account,
+      openingBalance,
+      closingBalance,
+      bankMovement: roundTo(bankMovement),
+      sumOfRows: roundTo(sumOfRows),
+      moneyIn: roundTo(moneyIn),
+      spending: roundTo(spending),
+      internal: roundTo(internal),
+      investments: roundTo(investments),
+      transfersOut: roundTo(transfersOut),
+      difference,
+      // A cent of float drift is not a discrepancy worth reporting.
+      balances: Math.abs(difference) < 0.02,
+    };
+  });
+}
+
+function roundTo(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+const cents = (value: number) => Math.round(value * 100);
+
+/**
+ * Finds the first and last rows of a statement as the bank posted it.
+ *
+ * Sorting by date is not enough: several payments share a day and the date says
+ * nothing about their order within it. Picking the wrong one as last made the
+ * closing balance wrong and the reconciliation report a 14.98 discrepancy on a real
+ * statement that in fact balanced to the cent.
+ *
+ * The running balance settles it. Every row begins at the balance the row before it
+ * ended on, so the first row is the only one nothing else ends where it begins, and
+ * the last is the only one nothing else begins where it ends.
+ *
+ * Only the two ends are worked out, not the whole order. Walking the chain looks
+ * tempting and breaks on real data: money out and straight back in revisits a
+ * balance, so several rows share one, and a greedy walk takes the wrong branch and
+ * stops early.
+ */
+function ledgerBounds(rows: BankTransaction[]) {
+  const byDate = [...rows].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  if (byDate.length < 2) return { first: byDate[0], last: byDate[byDate.length - 1] };
+
+  const endsAt = new Set(byDate.map((row) => cents(row.balance ?? 0)));
+  const beginsAt = new Set(byDate.map((row) => cents((row.balance ?? 0) - row.amount)));
+
+  const heads = byDate.filter((row) => !endsAt.has(cents((row.balance ?? 0) - row.amount)));
+  const tails = byDate.filter((row) => !beginsAt.has(cents(row.balance ?? 0)));
+
+  // Anything but one of each means the chain is broken — a gap in the export, or two
+  // statements merged. Date order is then the best answer available.
+  if (heads.length !== 1 || tails.length !== 1) {
+    return { first: byDate[0], last: byDate[byDate.length - 1] };
+  }
+
+  return { first: heads[0], last: tails[0] };
 }
 
 export function availableYears(transactions: BankTransaction[]) {
@@ -253,13 +401,35 @@ export function summarise(transactions: BankTransaction[], year: number): Financ
     }))
     .sort((a, b) => b.total - a.total);
 
-  // Where the money comes from, grouped by payer.
-  const sources = new Map<string, { label: string; total: number; count: number }>();
-  for (const transaction of incomeTransactions) {
+  /*
+   * Where the money comes from, grouped by payer.
+   *
+   * Money arriving from your own accounts is listed too, marked internal. Leaving it
+   * out entirely would be its own kind of lie: the money did arrive, and a month
+   * where ten thousand landed should not look empty. It is shown and not counted,
+   * which is the only version that is true on both sides.
+   */
+  const sources = new Map<
+    string,
+    { label: string; total: number; count: number; internal: boolean }
+  >();
+
+  for (const transaction of inYear) {
+    if (transaction.amount <= 0) continue;
+
+    const internal = Boolean(transaction.internalTransfer);
+    if (!internal && transaction.category === 'transfers') continue;
+
     const key = merchantKey(transaction.description);
-    const current = sources.get(key) ?? { label: transaction.description, total: 0, count: 0 };
+    const current = sources.get(key) ?? {
+      label: transaction.description,
+      total: 0,
+      count: 0,
+      internal,
+    };
     current.total += transaction.amount;
     current.count += 1;
+    current.internal = current.internal && internal;
     sources.set(key, current);
   }
 
@@ -269,8 +439,12 @@ export function summarise(transactions: BankTransaction[], year: number): Financ
       label: value.label,
       total: value.total,
       count: value.count,
-      share: moneyIn > 0 ? value.total / moneyIn : 0,
+      internal: value.internal,
+      // Share is of real income, so an internal line has none to claim.
+      share: !value.internal && moneyIn > 0 ? value.total / moneyIn : 0,
     }))
+    // Largest first, moved money included. Sorting it to the bottom would reorder
+    // the list on a toggle and lose the reader's place.
     .sort((a, b) => b.total - a.total);
 
   const monthsWithData = lastMonthWithData + 1;

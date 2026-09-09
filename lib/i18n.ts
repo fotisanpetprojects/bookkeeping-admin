@@ -240,8 +240,8 @@ export const STRINGS = {
     nl: '{added} nieuwe transactie(s) geïmporteerd van {from} tot {to}. {duplicates} al aanwezig.',
   },
   'fin.noData': {
-    en: 'No transactions yet. Import a CSV export from your bank to see where your money goes.',
-    nl: 'Nog geen transacties. Importeer een CSV-export van je bank om te zien waar je geld heen gaat.',
+    en: 'No transactions yet. Use the upload button above to import a CSV export from your bank — it is read here in your browser and never uploaded anywhere.',
+    nl: 'Nog geen transacties. Gebruik de uploadknop hierboven om een CSV-export van je bank te importeren — die wordt hier in je browser gelezen en nergens naartoe gestuurd.',
   },
   'fin.moneyIn': { en: 'Money in', nl: 'Inkomend' },
   'fin.spending': { en: 'Spending', nl: 'Uitgaven' },
@@ -274,6 +274,19 @@ export const STRINGS = {
   'fin.unknownWarning': {
     en: '{amount} across {count} transaction(s) is still uncategorised, so the split below is incomplete.',
     nl: '{amount} verdeeld over {count} transactie(s) is nog niet gerubriceerd, dus de verdeling hieronder is onvolledig.',
+  },
+  'common.confirm': { en: 'Confirm', nl: 'Bevestigen' },
+  'inv.deleteConfirm': {
+    en: 'Delete invoice {number} ({amount})? This cannot be undone.',
+    nl: 'Factuur {number} ({amount}) verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  },
+  'exp.deleteConfirm': {
+    en: 'Delete the {amount} expense from {supplier} on {date}? This cannot be undone.',
+    nl: 'De uitgave van {amount} bij {supplier} op {date} verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  },
+  'backup.replaceConfirm': {
+    en: 'Replace mode deletes everything currently stored in this browser and puts the backup in its place. A safety backup of your current data is downloaded first.',
+    nl: 'Vervangen wist alles wat nu in deze browser staat en zet de back-up ervoor in de plaats. Er wordt eerst een veiligheidsback-up van je huidige gegevens gedownload.',
   },
   'common.close': { en: 'Close', nl: 'Sluiten' },
   'common.previous': { en: 'Previous', nl: 'Vorige' },
@@ -385,6 +398,79 @@ export const STRINGS = {
   'fin.internalHint': {
     en: '{amount} arrived here from another account of yours across {count} transfer(s). It is shown because the money did arrive, and left out of income because you did not earn it twice.',
     nl: '{amount} kwam hier binnen vanaf een eigen rekening in {count} overboeking(en). Het staat er omdat het geld wél binnenkwam, en telt niet mee als inkomsten omdat je het niet twee keer hebt verdiend.',
+  },
+
+  'acc.clearAll': { en: 'Delete all imported transactions', nl: 'Alle geïmporteerde transacties verwijderen' },
+  'acc.clearHint': {
+    en: 'Start over with a clean import. Your invoices, expenses and profiles are untouched.',
+    nl: 'Begin opnieuw met een schone import. Je facturen, uitgaven en profielen blijven ongemoeid.',
+  },
+  'acc.clearConfirm': {
+    en: 'Delete all {count} imported transactions, including any categories you set by hand? Your invoices and expenses are not affected.',
+    nl: 'Alle {count} geïmporteerde transacties verwijderen, inclusief categorieën die je zelf hebt ingesteld? Je facturen en uitgaven blijven ongemoeid.',
+  },
+
+  'rec.title': { en: 'Does this add up?', nl: 'Klopt het?' },
+  'rec.info': {
+    en: 'Every category on this page is a judgement. The balance your bank printed on each line is not. This checks the two against each other: opening balance, plus everything that moved, should equal the closing balance. If it does, nothing is being counted twice or missed.',
+    nl: 'Elke categorie op deze pagina is een inschatting. Het saldo dat je bank op elke regel afdrukt niet. Dit vergelijkt beide: beginsaldo plus alles wat er bewoog hoort gelijk te zijn aan het eindsaldo. Klopt dat, dan wordt er niets dubbel geteld of overgeslagen.',
+  },
+  'rec.balances': { en: 'Balances to the cent', nl: 'Klopt tot op de cent' },
+  'rec.mismatch': { en: 'Off by {amount}', nl: '{amount} verschil' },
+  'rec.opening': { en: 'Opening balance', nl: 'Beginsaldo' },
+  'rec.closing': { en: 'Closing balance', nl: 'Eindsaldo' },
+  'rec.bankSays': { en: 'Bank says moved', nl: 'Bank zegt beweging' },
+  'rec.rowsSay': { en: 'Transactions add up to', nl: 'Transacties tellen op tot' },
+  'rec.moneyIn': { en: 'Money in', nl: 'Inkomend' },
+  'rec.spending': { en: 'Spending', nl: 'Uitgaven' },
+  'rec.investments': { en: 'Investments', nl: 'Beleggingen' },
+  'rec.transfersOut': { en: 'Transfers out', nl: 'Overboekingen uit' },
+  'rec.internal': { en: 'Between your accounts', nl: 'Tussen eigen rekeningen' },
+  'rec.perMonth': { en: 'Spending per month', nl: 'Uitgaven per maand' },
+  'rec.months': { en: 'over {count} month(s) with data', nl: 'over {count} maand(en) met data' },
+
+  'acs.title': { en: '{count} accounts imported', nl: '{count} rekeningen geïmporteerd' },
+  'acs.info': {
+    en: 'Each imported statement gets its own colour. Switch an account to transfers-only if it just moves money between accounts you own — money going there is not spending, and money coming from it is not income.',
+    nl: 'Elk geïmporteerd afschrift krijgt een eigen kleur. Zet een rekening op alleen-overboekingen als die alleen geld tussen je eigen rekeningen verplaatst — geld daarheen is geen uitgave, en geld vandaan is geen inkomen.',
+  },
+  'acs.rows': { en: '{count} transaction(s)', nl: '{count} transactie(s)' },
+  'acs.balance': { en: 'balance {amount}', nl: 'saldo {amount}' },
+  'acs.transfersOnly': { en: 'Transfers only', nl: 'Alleen overboekingen' },
+  'fin.movedNotEarned': { en: 'moved, not earned', nl: 'verplaatst, niet verdiend' },
+
+  // Every figure on the page explains the rule behind it.
+  'info.totalOut': {
+    en: 'Everything that left and was actually spent, over the period covered by your import. Money moved between your own accounts, credit-card repayments and investments are excluded — those are not costs.',
+    nl: 'Alles wat wegging en daadwerkelijk is uitgegeven, over de periode van je import. Geld tussen eigen rekeningen, creditcard-aflossingen en beleggingen tellen niet mee — dat zijn geen kosten.',
+  },
+  'info.fixed': {
+    en: 'Costs collected from you on a schedule — rent or mortgage, energy, insurance, phone, and anything direct-debited in most months. A gym counts even though it sits under sport, because you cannot skip it this month.',
+    nl: 'Kosten die volgens een vast ritme worden geïncasseerd — huur of hypotheek, energie, verzekering, telefoon, en alles wat in de meeste maanden automatisch wordt afgeschreven. Een sportabonnement telt mee, ook al valt het onder sport, omdat je het deze maand niet kunt overslaan.',
+  },
+  'info.flexible': {
+    en: 'Everything you decide on each time: groceries, eating out, travel, shopping. This is the part you can actually change month to month.',
+    nl: 'Alles waar je elke keer opnieuw over beslist: boodschappen, uit eten, reizen, winkelen. Dit is het deel dat je maand op maand echt kunt bijsturen.',
+  },
+  'info.projection': {
+    en: 'The year at the pace set so far. Totals are scaled by the days your import covers, not by months, so a statement ending mid-month does not drag the forecast down. The dashed part has not happened.',
+    nl: 'Het jaar in het tempo tot nu toe. Totalen worden geschaald op de dagen die je import beslaat, niet op maanden, zodat een afschrift dat midden in de maand eindigt de prognose niet omlaag trekt. Het gestippelde deel is nog niet gebeurd.',
+  },
+  'info.incoming': {
+    en: 'Money that arrived, grouped by who sent it. Anything transferred from your own accounts is listed greyed out and left out of the total — it arrived, but you did not earn it twice.',
+    nl: 'Geld dat binnenkwam, gegroepeerd per afzender. Overboekingen van je eigen rekeningen staan grijs weergegeven en tellen niet mee — het kwam binnen, maar je hebt het niet twee keer verdiend.',
+  },
+  'info.breakdown': {
+    en: 'Spending by category, longest bar first. Blue is a fixed commitment, green is spending you choose. Click any bar to see the transactions behind it.',
+    nl: 'Uitgaven per categorie, langste balk eerst. Blauw is een vaste last, groen is wat je zelf kiest. Klik op een balk om de onderliggende transacties te zien.',
+  },
+  'info.tidy': {
+    en: 'Merchants no rule recognised — usually local shops. Assign one and every transaction from it is filed, now and on future imports.',
+    nl: 'Winkeliers die geen regel herkende — meestal lokale zaken. Wijs er één toe en al zijn transacties worden gerubriceerd, nu en bij toekomstige imports.',
+  },
+  'info.import': {
+    en: 'A CSV export from your bank. It is read here in your browser and never uploaded. Re-importing the same period updates rows instead of duplicating them, and never overwrites a category you set by hand.',
+    nl: 'Een CSV-export van je bank. Die wordt hier in je browser gelezen en nooit geüpload. Dezelfde periode opnieuw importeren werkt rijen bij in plaats van ze te verdubbelen, en overschrijft nooit een categorie die je zelf hebt ingesteld.',
   },
 
   'fin.incoming': { en: 'Where the money comes from', nl: 'Waar het geld vandaan komt' },

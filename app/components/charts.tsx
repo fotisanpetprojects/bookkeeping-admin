@@ -387,6 +387,10 @@ export function ProjectionChart({
 export type CategoryBar = {
   /** The category this bar stands for, so a click can filter by it. */
   id?: string;
+  /** Money moved from another of your accounts: shown, but not part of the total. */
+  internal?: boolean;
+  /** Replaces the percentage when a row has no share of the total to claim. */
+  note?: string;
   label: string;
   value: number;
   share: number;
@@ -438,7 +442,7 @@ export function CategoryBars({ bars, fixedLabel, flexibleLabel, onSelect, tone }
           <button
             key={bar.label}
             onClick={() => onSelect?.(bar)}
-            className="category-row"
+            className={bar.internal ? 'category-row is-internal' : 'category-row'}
             title={onSelect ? `${bar.count} · ${bar.label}` : undefined}
           >
             <span className="truncate text-left text-sm" title={bar.label}>
@@ -457,7 +461,9 @@ export function CategoryBars({ bars, fixedLabel, flexibleLabel, onSelect, tone }
 
             <span className="whitespace-nowrap text-right text-sm tabular-nums">
               <span className="font-medium">{formatCurrency(bar.value)}</span>
-              <span className="ml-2 faint">{(bar.share * 100).toFixed(1)}%</span>
+              <span className="ml-2 faint">
+                {bar.note ?? `${(bar.share * 100).toFixed(1)}%`}
+              </span>
             </span>
           </button>
         ))}
