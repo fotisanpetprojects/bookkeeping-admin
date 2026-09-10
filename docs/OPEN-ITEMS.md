@@ -40,9 +40,9 @@ ciphertext — the server should not be able to read what it stores.
 
 ## Correctness
 
-**The tax chain and the parser are still untested.** `lib/finance.ts` and
-`lib/crypto.ts` are covered; the VAT quarter maths, the ZZP tax chain, the backup merge
-dedupe and the CSV parsing are not. They were verified by driving a browser, which does
+**The CSV parser is the last untested piece.** `lib/crypto.ts`, `lib/finance.ts`,
+`lib/tax.ts` and `lib/backup.ts` are covered by 45 tests; `lib/bank.ts` parsing and the
+VAT quarter maths are not. They were verified by driving a browser, which does
 not survive a refactor. `lib/tax.ts`, `lib/backup.ts` and `lib/bank.ts` are pure and the
 harness exists, so each is a short file away. Several real bugs of exactly this class
 have shipped and been caught by hand:

@@ -19,7 +19,7 @@
  *   - a server route to keep the key off the client (see the note below)
  */
 
-import { BackupPayload, BACKUP_FORMAT } from '@/lib/backup';
+import { BackupPayload, BACKUP_FORMAT } from './backup.ts';
 
 export type AiProvider = 'anthropic' | 'openai' | 'none';
 

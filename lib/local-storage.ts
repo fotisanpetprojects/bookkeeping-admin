@@ -1,8 +1,8 @@
 'use client';
 
-import { Dispatch, SetStateAction, useRef, useSyncExternalStore } from 'react';
+import { type Dispatch, type SetStateAction, useRef, useSyncExternalStore } from 'react';
 
-import { vaultDelete, vaultGet, vaultSet } from '@/lib/vault';
+import { vaultDelete, vaultGet, vaultSet } from './vault.ts';
 
 const LOCAL_STORAGE_EVENT = 'local-storage-change';
 const snapshotCache = new Map<string, { raw: string | null; parsed: unknown }>();

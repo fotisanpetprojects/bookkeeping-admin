@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocalStorageState } from '@/lib/local-storage';
+import { useLocalStorageState } from './local-storage.ts';
 
 export type Language = 'en' | 'nl';
 
