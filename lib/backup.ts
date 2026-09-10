@@ -6,7 +6,7 @@ import {
   readStoredJson,
   restoreRawValue,
   writeStoredJson,
-} from '@/lib/local-storage';
+} from './local-storage.ts';
 
 export const BACKUP_FORMAT = 'bookkeeping-admin-backup';
 export const BACKUP_VERSION = 1;
@@ -162,7 +162,7 @@ function invoiceNumberOf(item: unknown) {
  * device wins, so a restore can only ever add entries — never overwrite or drop
  * one, and never duplicate an invoice that is already booked.
  */
-function mergeById(current: unknown, incoming: unknown) {
+export function mergeById(current: unknown, incoming: unknown) {
   const currentList = Array.isArray(current) ? current : [];
   const incomingList = Array.isArray(incoming) ? incoming : [];
   const seenIds = new Set(currentList.map(identityOf));

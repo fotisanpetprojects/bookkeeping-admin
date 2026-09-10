@@ -17,7 +17,7 @@
  */
 
 import {
-  VaultEnvelope,
+  type VaultEnvelope,
   changePassphrase,
   createVault,
   decryptWithDek,
@@ -25,7 +25,7 @@ import {
   sealVault,
   unlockWithPassphrase,
   unlockWithRecoveryCode,
-} from '@/lib/crypto';
+} from './crypto.ts';
 
 export const VAULT_KEY = 'vault.v1';
 

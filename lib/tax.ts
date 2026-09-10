@@ -1,6 +1,6 @@
 'use client';
 
-import { roundCents } from '@/lib/billing';
+import { roundCents } from './billing.ts';
 
 export type TaxBracket = {
   /** Upper bound of the bracket, or null for the top bracket. */
