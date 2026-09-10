@@ -490,6 +490,14 @@ export const STRINGS = {
     en: 'Everything that left and was actually spent, over the period covered by your import. Money moved between your own accounts, credit-card repayments and investments are excluded — those are not costs.',
     nl: 'Alles wat wegging en daadwerkelijk is uitgegeven, over de periode van je import. Geld tussen eigen rekeningen, creditcard-aflossingen en beleggingen tellen niet mee — dat zijn geen kosten.',
   },
+  'info.perAccount': {
+    en: 'What this account alone spent, and its monthly average. Marked {kind}. Money moved to your other accounts is not counted here. Click to see the transactions.',
+    nl: 'Wat alleen deze rekening uitgaf, en het maandgemiddelde. Gemarkeerd als {kind}. Geld naar je andere rekeningen telt hier niet mee. Klik om de transacties te zien.',
+  },
+  'fin.noAccountNumbers': {
+    en: 'These transactions were imported before the app recorded account numbers, so it cannot tell them apart or spot transfers between them. Re-import your statements — your categories are kept.',
+    nl: 'Deze transacties zijn geïmporteerd voordat de app rekeningnummers vastlegde, dus ze kunnen niet uit elkaar worden gehouden en overboekingen ertussen worden niet herkend. Importeer je afschriften opnieuw — je categorieën blijven behouden.',
+  },
   'info.fixed': {
     en: 'Costs collected from you on a schedule — rent or mortgage, energy, insurance, phone, and anything direct-debited in most months. A gym counts even though it sits under sport, because you cannot skip it this month.',
     nl: 'Kosten die volgens een vast ritme worden geïncasseerd — huur of hypotheek, energie, verzekering, telefoon, en alles wat in de meeste maanden automatisch wordt afgeschreven. Een sportabonnement telt mee, ook al valt het onder sport, omdat je het deze maand niet kunt overslaan.',

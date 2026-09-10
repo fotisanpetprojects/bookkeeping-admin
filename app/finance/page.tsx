@@ -14,6 +14,7 @@ import {
   ACCOUNT_LABELS_KEY,
   AccountKind,
   AccountLabel,
+  accountColour,
   displayAccount,
   internalAccounts,
   kindOf,
@@ -42,7 +43,7 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 /** Enough to work through in one sitting; the rest is behind the arrow. */
 const SHOWN_UNKNOWNS = 8;
 
-function Stat({ label, value, sub, tone, onOpen, info }: {
+function Stat({ label, value, sub, tone, onOpen, info, dot }: {
   label: string;
   value: string;
   sub?: string;
@@ -50,13 +51,22 @@ function Stat({ label, value, sub, tone, onOpen, info }: {
   onOpen?: () => void;
   /** What this figure counts, and what it deliberately leaves out. */
   info?: string;
+  /** Ties a tile to its account, using the same colour as the strip above. */
+  dot?: string;
 }) {
   const color = tone === 'good' ? 'var(--good)' : tone === 'bad' ? 'var(--bad)' : 'var(--ink)';
 
   const body = (
     <>
       <div className="flex items-center gap-2 text-sm muted">
-        {label}
+        {dot && (
+          <span
+            className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+            style={{ background: dot }}
+            aria-hidden
+          />
+        )}
+        <span className="truncate">{label}</span>
         {info && <InfoMark text={info} />}
       </div>
       <div className="mt-1 text-2xl font-semibold tabular-nums" style={{ color }}>
@@ -129,6 +139,29 @@ export default function FinancePage() {
   }, [marked, account, labels]);
 
   const summary = useMemo(() => summarise(scoped, activeYear), [scoped, activeYear]);
+
+  /**
+   * Spending per account, largest first. This is the split people actually want
+   * when more than one statement is loaded: a combined figure adds a business
+   * account's costs to a personal one's and answers neither question.
+   */
+  const perAccount = useMemo(() => {
+    const totals = new Map<string, number>();
+
+    for (const transaction of scoped) {
+      if (!isSpending(transaction)) continue;
+      if (!transaction.date.startsWith(String(activeYear))) continue;
+
+      const key = normaliseAccount(transaction.account);
+      if (!key) continue;
+
+      totals.set(key, (totals.get(key) ?? 0) + Math.abs(transaction.amount));
+    }
+
+    return [...totals.entries()]
+      .map(([account, spending]) => ({ account, spending, kind: kindOf(labels, account) }))
+      .sort((a, b) => b.spending - a.spending);
+  }, [scoped, activeYear, labels]);
   const unknowns = useMemo(() => unknownByMerchant(scoped, activeYear), [scoped, activeYear]);
   const shownUnknowns = showAllUnknown ? unknowns : unknowns.slice(0, SHOWN_UNKNOWNS);
 
@@ -359,6 +392,17 @@ export default function FinancePage() {
         <section className="card p-10 text-center muted">{t('fin.noData')}</section>
       ) : (
         <>
+          {/*
+            Rows imported before account numbers were recorded cannot be told apart,
+            and transfers between them cannot be spotted. Without saying so the page
+            just shows one combined figure and looks wrong for no visible reason.
+          */}
+          {accounts.length === 0 && (
+            <section className="panel p-4 text-sm text-[var(--warn)]">
+              {t('fin.noAccountNumbers')}
+            </section>
+          )}
+
           <AccountStrip
             transactions={marked}
             labels={labels}
@@ -376,7 +420,13 @@ export default function FinancePage() {
             monthsWithData={summary.monthsWithData}
           />
 
-          <section className="grid gap-4 md:grid-cols-3">
+          <section
+            className={
+              perAccount.length > 1
+                ? 'grid gap-4 md:grid-cols-2 xl:grid-cols-3'
+                : 'grid gap-4 md:grid-cols-3'
+            }
+          >
             <Stat
               label={t('fin.totalOut')}
               info={t('info.totalOut')}
@@ -400,47 +450,84 @@ export default function FinancePage() {
               }
             />
 
-            <Stat
-              label={t('fin.fixed')}
-              info={t('info.fixed')}
-              value={formatCurrency(summary.fixedSpend)}
-              sub={t('fin.perMonth', {
-                amount: formatCurrency(
-                  summary.monthsWithData ? summary.fixedSpend / summary.monthsWithData : 0
-                ),
-              })}
-              onOpen={() =>
-                setDrawer({
-                  title: t('fin.fixed'),
-                  subtitle: String(activeYear),
-                  filter: (transaction) =>
-                    isSpending(transaction) &&
-                    transaction.date.startsWith(String(activeYear)) &&
-                    FIXED_CATEGORIES.has(transaction.category),
-                })
-              }
-            />
+            {/*
+              With more than one account the useful split is per account, not fixed
+              versus flexible: business costs and personal ones answer different
+              questions and adding them together answers neither. Fixed and flexible
+              are still readable from the colours in the breakdown below.
+            */}
+            {perAccount.length > 1
+              ? perAccount.map((entry) => (
+                  <Stat
+                    key={entry.account}
+                    label={displayAccount(labels, entry.account)}
+                    info={t('info.perAccount', {
+                      kind: t(entry.kind === 'business' ? 'acc.business' : 'acc.personal'),
+                    })}
+                    dot={accountColour(accounts, entry.account)}
+                    value={formatCurrency(entry.spending)}
+                    sub={t('fin.perMonth', {
+                      amount: formatCurrency(
+                        summary.monthsWithData ? entry.spending / summary.monthsWithData : 0
+                      ),
+                    })}
+                    onOpen={() =>
+                      setDrawer({
+                        title: displayAccount(labels, entry.account),
+                        subtitle: String(activeYear),
+                        filter: (transaction) =>
+                          isSpending(transaction) &&
+                          transaction.date.startsWith(String(activeYear)) &&
+                          normaliseAccount(transaction.account) === entry.account,
+                      })
+                    }
+                  />
+                ))
+              : (
+                <>
+                  <Stat
+                    label={t('fin.fixed')}
+                    info={t('info.fixed')}
+                    value={formatCurrency(summary.fixedSpend)}
+                    sub={t('fin.perMonth', {
+                      amount: formatCurrency(
+                        summary.monthsWithData ? summary.fixedSpend / summary.monthsWithData : 0
+                      ),
+                    })}
+                    onOpen={() =>
+                      setDrawer({
+                        title: t('fin.fixed'),
+                        subtitle: String(activeYear),
+                        filter: (transaction) =>
+                          isSpending(transaction) &&
+                          transaction.date.startsWith(String(activeYear)) &&
+                          FIXED_CATEGORIES.has(transaction.category),
+                      })
+                    }
+                  />
 
-            <Stat
-              label={t('fin.flexible')}
-              info={t('info.flexible')}
-              value={formatCurrency(summary.discretionarySpend)}
-              sub={t('fin.perMonth', {
-                amount: formatCurrency(
-                  summary.monthsWithData ? summary.discretionarySpend / summary.monthsWithData : 0
-                ),
-              })}
-              onOpen={() =>
-                setDrawer({
-                  title: t('fin.flexible'),
-                  subtitle: String(activeYear),
-                  filter: (transaction) =>
-                    isSpending(transaction) &&
-                    transaction.date.startsWith(String(activeYear)) &&
-                    !FIXED_CATEGORIES.has(transaction.category),
-                })
-              }
-            />
+                  <Stat
+                    label={t('fin.flexible')}
+                    info={t('info.flexible')}
+                    value={formatCurrency(summary.discretionarySpend)}
+                    sub={t('fin.perMonth', {
+                      amount: formatCurrency(
+                        summary.monthsWithData ? summary.discretionarySpend / summary.monthsWithData : 0
+                      ),
+                    })}
+                    onOpen={() =>
+                      setDrawer({
+                        title: t('fin.flexible'),
+                        subtitle: String(activeYear),
+                        filter: (transaction) =>
+                          isSpending(transaction) &&
+                          transaction.date.startsWith(String(activeYear)) &&
+                          !FIXED_CATEGORIES.has(transaction.category),
+                      })
+                    }
+                  />
+                </>
+              )}
           </section>
 
           <section className="card p-6">
