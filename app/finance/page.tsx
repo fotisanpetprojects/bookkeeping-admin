@@ -12,6 +12,7 @@ const FIXED_CATEGORIES = new Set(
 );
 import {
   ACCOUNT_LABELS_KEY,
+  AccountKind,
   AccountLabel,
   displayAccount,
   internalAccounts,
@@ -113,16 +114,19 @@ export default function FinancePage() {
    * applied. Deciding it after filtering would make a transfer look external simply
    * because the other side had been filtered away.
    */
-  const scoped = useMemo(() => {
-    const marked = markInternalTransfers(transactions, internalAccounts(labels, accounts));
+  const marked = useMemo(
+    () => markInternalTransfers(transactions, internalAccounts(labels, accounts)),
+    [transactions, labels, accounts]
+  );
 
+  const scoped = useMemo(() => {
     if (account === 'all') return marked;
     if (account === 'personal' || account === 'business') {
       return transactionsForKind(marked, labels, account);
     }
 
     return marked.filter((t) => normaliseAccount(t.account) === normaliseAccount(account));
-  }, [transactions, account, labels, accounts]);
+  }, [marked, account, labels]);
 
   const summary = useMemo(() => summarise(scoped, activeYear), [scoped, activeYear]);
   const unknowns = useMemo(() => unknownByMerchant(scoped, activeYear), [scoped, activeYear]);
@@ -214,18 +218,24 @@ export default function FinancePage() {
     }
   };
 
-  const setInternalOnly = (account: string, internalOnly: boolean) => {
+  /** One place to change anything about an account, so the two controls stay in step. */
+  const updateAccount = (account: string, patch: Partial<AccountLabel>) => {
     const key = normaliseAccount(account);
     const existing = labels.find((label) => normaliseAccount(label.account) === key);
 
     setLabels(
       existing
         ? labels.map((label) =>
-            normaliseAccount(label.account) === key ? { ...label, internalOnly } : label
+            normaliseAccount(label.account) === key ? { ...label, ...patch } : label
           )
-        : [...labels, { ...labelFor(labels, key), internalOnly }]
+        : [...labels, { ...labelFor(labels, key), ...patch, account: key }]
     );
   };
+
+  const setInternalOnly = (account: string, internalOnly: boolean) =>
+    updateAccount(account, { internalOnly });
+
+  const setAccountKind = (account: string, kind: AccountKind) => updateAccount(account, { kind });
 
   const deleteIds = (ids: string[]) => {
     const doomed = new Set(ids);
@@ -350,9 +360,10 @@ export default function FinancePage() {
       ) : (
         <>
           <AccountStrip
-            transactions={transactions}
+            transactions={marked}
             labels={labels}
             onToggleInternal={setInternalOnly}
+            onChangeKind={setAccountKind}
             year={activeYear}
           />
 

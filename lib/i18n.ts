@@ -476,11 +476,12 @@ export const STRINGS = {
 
   'acs.title': { en: '{count} accounts imported', nl: '{count} rekeningen geïmporteerd' },
   'acs.info': {
-    en: 'Each imported statement gets its own colour. Switch an account to transfers-only if it just moves money between accounts you own — money going there is not spending, and money coming from it is not income.',
-    nl: 'Elk geïmporteerd afschrift krijgt een eigen kleur. Zet een rekening op alleen-overboekingen als die alleen geld tussen je eigen rekeningen verplaatst — geld daarheen is geen uitgave, en geld vandaan is geen inkomen.',
+    en: 'Each imported statement gets its own colour, with the spending it is responsible for. Marking an account business separates its costs from your personal ones — otherwise both are added together, which is usually why a combined total looks too high. Transfers-only means money between it and your other accounts is not income or spending.',
+    nl: 'Elk geïmporteerd afschrift krijgt een eigen kleur, met de uitgaven die eronder vallen. Een rekening als zakelijk markeren scheidt die kosten van je privé-uitgaven — anders worden ze bij elkaar opgeteld, wat meestal de reden is dat een totaal te hoog lijkt. Alleen-overboekingen betekent dat geld tussen deze en je andere rekeningen geen inkomen of uitgave is.',
   },
   'acs.rows': { en: '{count} transaction(s)', nl: '{count} transactie(s)' },
   'acs.balance': { en: 'balance {amount}', nl: 'saldo {amount}' },
+  'acs.spends': { en: 'Spending here', nl: 'Uitgaven hier' },
   'acs.transfersOnly': { en: 'Transfers only', nl: 'Alleen overboekingen' },
   'fin.movedNotEarned': { en: 'moved, not earned', nl: 'verplaatst, niet verdiend' },
 
